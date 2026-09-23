@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  --background: #FAFAF8;
+  --foreground: #201C1A;
+
+  --header-bg: #10121A;
+  --header-fg: #F2F0EA;
+
+  --surface: #FFFFFF;
+  --surface-2: #F1EFEA;
+  --line: #E5E1D8;
+
+  --accent: #C4202E;
+  --accent-soft: #FBE7E9;
+  --gold: #C9922A;
+  --verified: #2F7A5C;
+  --verified-soft: #E4F2EC;
+
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-header-bg: var(--header-bg);
+  --color-header-fg: var(--header-fg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-gold: var(--gold);
+  --color-verified: var(--verified);
+  --color-verified-soft: var(--verified-soft);
+  --font-sans: var(--font-body);
+  --font-display: var(--font-display);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+}
