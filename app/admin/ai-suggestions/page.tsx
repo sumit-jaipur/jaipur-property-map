@@ -80,6 +80,9 @@ type BuildQueueItem = {
   type: "content" | "feature";
   status: "queued" | "in_progress" | "done" | "dismissed";
   created_at: string;
+  github_issue_number?: number | null;
+  github_pr_number?: number | null;
+  github_pr_url?: string | null;
 };
 type PriceFlagContent = {
   flag: "fair" | "overpriced" | "underpriced";
@@ -123,6 +126,10 @@ export default function AiSuggestionsPage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [buildQueue, setBuildQueue] = useState<BuildQueueItem[]>([]);
   const [updatingQueueId, setUpdatingQueueId] = useState<number | null>(null);
+  const [dispatchingQueueId, setDispatchingQueueId] = useState<number | null>(
+    null
+  );
+  const [mergingQueueId, setMergingQueueId] = useState<number | null>(null);
 
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [generatingId, setGeneratingId] = useState<number | null>(null);
@@ -152,7 +159,9 @@ export default function AiSuggestionsPage() {
       // fail quietly (empty queue) rather than blocking the whole page.
       supabase
         .from("build_queue")
-        .select("id, title, detail, type, status, created_at")
+        .select(
+          "id, title, detail, type, status, created_at, github_issue_number, github_pr_number, github_pr_url"
+        )
         .order("created_at", { ascending: false }),
     ]);
 
@@ -242,6 +251,94 @@ export default function AiSuggestionsPage() {
     );
   }
 
+  // Turns a queued "feature" item into a GitHub issue labeled
+  // "ai-build-feature", which triggers the claude-build.yml workflow to
+  // actually write the code and open a pull request. Called automatically
+  // right after Approve on a feature recommendation; also exposed as a
+  // manual "Start AI Build" button in case that automatic call fails
+  // (e.g. GitHub was briefly unreachable) so nothing gets silently stuck.
+  async function handleDispatchBuild(itemId: number) {
+    setDispatchingQueueId(itemId);
+    setError("");
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      router.replace("/auth");
+      return;
+    }
+
+    const response = await fetch("/api/admin/build-queue/dispatch", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ queueId: itemId }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setDispatchingQueueId(null);
+
+    if (!response.ok) {
+      setError(result?.error || "Could not start the AI build.");
+      return;
+    }
+
+    setBuildQueue((current) =>
+      current.map((item) =>
+        item.id === itemId
+          ? { ...item, status: "in_progress", github_issue_number: result.issueNumber }
+          : item
+      )
+    );
+  }
+
+  // The one manual step in the pipeline: merges the pull request Claude
+  // opened, which is what actually makes it go live (Vercel auto-deploys
+  // the instant it lands on main). Only enabled once a PR exists for this
+  // item -- see the "Ready to merge" section below.
+  async function handleMergeBuild(itemId: number) {
+    setMergingQueueId(itemId);
+    setError("");
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      router.replace("/auth");
+      return;
+    }
+
+    const response = await fetch("/api/admin/build-queue/merge", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ queueId: itemId }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    setMergingQueueId(null);
+
+    if (!response.ok) {
+      setError(result?.error || "Could not merge this pull request.");
+      return;
+    }
+
+    setBuildQueue((current) =>
+      current.map((item) =>
+        item.id === itemId ? { ...item, status: "done" } : item
+      )
+    );
+  }
+
   async function markSuggestionApproved(suggestion: Suggestion) {
     const { error: suggestionUpdateError } = await supabase
       .from("ai_suggestions")
@@ -276,37 +373,41 @@ export default function AiSuggestionsPage() {
       // the "overview" row (and any legacy row from before this split) is
       // read-only context, so approving it just marks it reviewed.
       if ("kind" in content && content.kind === "recommendation") {
-        const { error: queueError } = await supabase.from("build_queue").insert([
-          {
-            title: content.title,
-            detail: content.detail,
-            type: content.recommendationType,
-            status: "queued",
-            source_suggestion_id: suggestion.id,
-          },
-        ]);
+        const { data: insertedRows, error: queueError } = await supabase
+          .from("build_queue")
+          .insert([
+            {
+              title: content.title,
+              detail: content.detail,
+              type: content.recommendationType,
+              status: "queued",
+              source_suggestion_id: suggestion.id,
+            },
+          ])
+          .select()
+          .single();
 
-        if (queueError) {
+        if (queueError || !insertedRows) {
           setError(
             "Could not add this to the build queue (" +
-              queueError.message +
+              (queueError?.message || "unknown error") +
               "). If build_queue doesn't exist yet, run its migration first."
           );
           setUpdatingId(null);
           return;
         }
 
-        setBuildQueue((current) => [
-          {
-            id: Date.now(), // temporary local id until the next reload
-            title: content.title,
-            detail: content.detail,
-            type: content.recommendationType,
-            status: "queued",
-            created_at: new Date().toISOString(),
-          },
-          ...current,
-        ]);
+        const newItem = insertedRows as BuildQueueItem;
+
+        setBuildQueue((current) => [newItem, ...current]);
+
+        // Feature ideas kick off the AI build automatically -- that's
+        // what makes Approve here the only click needed. Content ideas
+        // (blog posts etc.) have nowhere automated to build yet, so they
+        // just sit in the queue as before.
+        if (newItem.type === "feature") {
+          await handleDispatchBuild(newItem.id);
+        }
       }
 
       await markSuggestionApproved(suggestion);
@@ -772,10 +873,13 @@ export default function AiSuggestionsPage() {
 
 
         {/* BUILD QUEUE -- everything approved from a market-trend
-            recommendation lands here. "feature" items are what Claude
-            builds next session; "content" items become real articles once
-            the blog system ships. Read-only for now -- just visibility
-            that Approve actually queued real work. */}
+            recommendation lands here. "feature" items automatically open
+            a GitHub issue, which Claude Code picks up to write the code
+            and open a pull request -- no further click needed to get
+            that far. The one manual step left is "Merge & Go Live" once
+            a PR is ready, so nothing reaches the live site without a
+            deliberate tap. "content" items become real articles once the
+            blog system ships. */}
 
         {buildQueue.length > 0 && (
           <section className="mb-8 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
@@ -789,9 +893,11 @@ export default function AiSuggestionsPage() {
             </h2>
 
             <p className="mt-1 text-sm text-zinc-500">
-              Feature ideas get built in a coming session (you still review
-              and deploy the code, as always). Content ideas become real
-              articles once the blog system ships.
+              Feature ideas build themselves automatically once approved --
+              Claude writes the code and opens a pull request. Tap
+              &quot;Merge &amp; Go Live&quot; once a PR is ready to actually
+              ship it. Content ideas become real articles once the blog
+              system ships.
             </p>
 
             <ul className="mt-4 space-y-2">
@@ -814,6 +920,26 @@ export default function AiSuggestionsPage() {
                     <span className="text-sm font-semibold text-zinc-800">
                       {item.title}
                     </span>
+
+                    {item.github_pr_url ? (
+                      <a
+                        href={item.github_pr_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 text-xs font-semibold text-blue-600 underline hover:text-blue-800"
+                      >
+                        View PR #{item.github_pr_number}
+                      </a>
+                    ) : item.github_issue_number ? (
+                      <a
+                        href={`https://github.com/sumit-jaipur/jaipur-property-map/issues/${item.github_issue_number}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-2 text-xs font-semibold text-blue-600 underline hover:text-blue-800"
+                      >
+                        View issue #{item.github_issue_number}
+                      </a>
+                    ) : null}
                   </div>
 
                   <div className="flex shrink-0 flex-wrap items-center gap-2">
@@ -829,34 +955,56 @@ export default function AiSuggestionsPage() {
                           : "bg-yellow-50 text-yellow-700")
                       }
                     >
-                      {item.status}
+                      {item.github_pr_number && item.status === "in_progress"
+                        ? "PR ready"
+                        : item.github_issue_number && item.status === "in_progress"
+                        ? "Claude is building this"
+                        : item.status}
                     </span>
 
-                    {item.status === "queued" && item.type === "feature" && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          handleUpdateQueueStatus(item.id, "in_progress")
-                        }
-                        disabled={updatingQueueId === item.id}
-                        className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-bold text-white transition hover:bg-zinc-700 disabled:opacity-50"
-                      >
-                        Claude&apos;s Building This
-                      </button>
-                    )}
+                    {item.status === "queued" &&
+                      item.type === "feature" &&
+                      !item.github_issue_number && (
+                        <button
+                          type="button"
+                          onClick={() => handleDispatchBuild(item.id)}
+                          disabled={dispatchingQueueId === item.id}
+                          className="rounded-full bg-zinc-900 px-3 py-1 text-xs font-bold text-white transition hover:bg-zinc-700 disabled:opacity-50"
+                        >
+                          {dispatchingQueueId === item.id
+                            ? "Starting..."
+                            : "Start AI Build"}
+                        </button>
+                      )}
+
+                    {item.status === "in_progress" &&
+                      item.type === "feature" &&
+                      item.github_pr_number && (
+                        <button
+                          type="button"
+                          onClick={() => handleMergeBuild(item.id)}
+                          disabled={mergingQueueId === item.id}
+                          className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                        >
+                          {mergingQueueId === item.id
+                            ? "Merging..."
+                            : "Merge & Go Live"}
+                        </button>
+                      )}
 
                     {(item.status === "queued" ||
                       item.status === "in_progress") &&
-                      item.type === "feature" && (
+                      item.type === "feature" &&
+                      !item.github_pr_number && (
                         <button
                           type="button"
                           onClick={() =>
                             handleUpdateQueueStatus(item.id, "done")
                           }
                           disabled={updatingQueueId === item.id}
-                          className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-bold text-white transition hover:bg-emerald-700 disabled:opacity-50"
+                          className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-bold text-zinc-600 transition hover:bg-zinc-100 disabled:opacity-50"
                         >
-                          Mark Done -- It&apos;s Live
+                          Mark Done Manually
                         </button>
                       )}
 

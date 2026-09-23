@@ -1,0 +1,41 @@
+name: Link AI-built PR to build queue
+
+# When claude-build.yml opens a PR (branch prefixed "claude/", body
+# containing "Closes #<issue>"), this records the PR number/url on the
+# matching build_queue row in Supabase, so the admin panel's
+# "Ready to merge" section can find it and show a Merge & Go Live button.
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  link:
+    if: startsWith(github.event.pull_request.head.ref, 'claude/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Extract linked issue number and update Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -e
+
+          ISSUE_NUMBER=$(printf '%s' "$PR_BODY" | grep -oiE '(closes|fixes|resolves) #[0-9]+' | head -n1 | grep -oE '[0-9]+' || true)
+
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "No linked issue found in PR body, skipping."
+            exit 0
+          fi
+
+          echo "Linking PR #$PR_NUMBER to build_queue row for issue #$ISSUE_NUMBER"
+
+          curl -sS -X PATCH \
+            "$SUPABASE_URL/rest/v1/build_queue?github_issue_number=eq.$ISSUE_NUMBER" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: return=minimal" \
+            -d "{\"github_pr_number\": $PR_NUMBER, \"github_pr_url\": \"$PR_URL\"}"

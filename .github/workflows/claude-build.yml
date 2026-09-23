@@ -1,0 +1,57 @@
+﻿name: AI Build (Claude Code)
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  build:
+    if: github.event.label.name == 'ai-build-feature'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      actions: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write the feature with Claude Code
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch_prefix: "claude/"
+          prompt: |
+            You are implementing an approved feature request for 99Bricks,
+            a Next.js + TypeScript + Tailwind + Supabase real-estate
+            listing platform for Jaipur, India. Read AGENTS.md and
+            CLAUDE.md first for repo conventions.
+
+            Issue title: ${{ github.event.issue.title }}
+
+            Issue body:
+            ${{ github.event.issue.body }}
+
+            Implement this directly in the codebase, matching existing
+            code style, component patterns, and the existing
+            admin-approval-first philosophy of this project.
+
+            Hard rules, never break these:
+            - Never write a .sql file that anything would auto-run. If the
+              feature needs a database change, put the migration SQL in a
+              new file under `pending-migrations/` with a clear filename
+              and an explanatory comment at the top -- do not attempt to
+              apply it. Database changes are always run manually by the
+              project owner in the Supabase SQL editor.
+            - Never commit secrets, API keys, or .env files.
+            - Keep the change scoped to what the issue describes -- don't
+              refactor unrelated code.
+
+            When finished, open a pull request against main. In the PR
+            description: summarize what changed, note whether a migration
+            file was added and needs to be run before the feature fully
+            works, and include the line "Closes #${{ github.event.issue.number }}".
+          claude_args: |
+            --max-turns 60
