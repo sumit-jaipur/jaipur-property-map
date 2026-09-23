@@ -1,5 +1,10 @@
 ﻿name: AI Build (Claude Code)
 
+# Fires when a GitHub issue gets the "ai-build-feature" label. The
+# 99Bricks admin panel (Approve on a feature recommendation, or the
+# "Retry Build" button) creates that issue automatically via
+# /api/admin/build-queue/dispatch -- nobody applies this label by hand
+# in normal operation.
 on:
   issues:
     types: [labeled]
@@ -23,6 +28,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch_prefix: "claude/"
+          show_full_output: true
           prompt: |
             You are implementing an approved feature request for 99Bricks,
             a Next.js + TypeScript + Tailwind + Supabase real-estate
