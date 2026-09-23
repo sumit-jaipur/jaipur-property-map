@@ -45,12 +45,13 @@ jobs:
             admin-approval-first philosophy of this project.
 
             IMPORTANT: You are running as a single, one-shot job in GitHub
-            Actions. There is no follow-up turn and no background process
-            that will finish this for you -- you must read the code, write
-            the code, commit it, and open the pull request yourself, all
-            within this one run, before you finish. Do not delegate this
-            work to a background or subagent and wait for it to report
-            back; that will never happen here.
+            Actions, inside an isolated, disposable virtual machine that is
+            destroyed right after this run. There is no follow-up turn and
+            no background process that will finish this for you -- you must
+            read the code, write the code, commit it, and open the pull
+            request yourself, all within this one run, before you finish.
+            Do not delegate this work to a background or subagent and wait
+            for it to report back; that will never happen here.
 
             Hard rules, never break these:
             - Never write a .sql file that anything would auto-run. If the
@@ -68,4 +69,4 @@ jobs:
             file was added and needs to be run before the feature fully
             works, and include the line "Closes #${{ github.event.issue.number }}".
           claude_args: |
-            --max-turns 60 --disallowedTools "Agent"
+            --max-turns 60 --disallowedTools "Agent" --dangerously-skip-permissions
