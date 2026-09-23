@@ -1,12 +1,19 @@
 ﻿name: Link AI-built PR to build queue
 
+# Fires whenever a pull request is opened, reopened, or updated with new
+# commits. We used to also require the branch name to start with
+# "claude/", but Claude Code does not always name branches that way (it
+# named one "feature/saved-search-alerts" once, which made this whole
+# job get skipped). The real, reliable signal that a PR belongs to an
+# AI-built issue is the "Closes #N" line in the PR body, which the
+# script below already looks for and safely does nothing if it's
+# missing -- so we no longer gate on the branch name at all.
 on:
   pull_request:
-    types: [opened]
+    types: [opened, reopened, synchronize]
 
 jobs:
   link:
-    if: startsWith(github.event.pull_request.head.ref, 'claude/')
     runs-on: ubuntu-latest
     steps:
       - name: Extract linked issue number and update Supabase
