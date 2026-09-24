@@ -22,7 +22,7 @@ const VALID_STATUSES = [
 // migration).
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authHeader = request.headers.get("authorization");
   const accessToken = authHeader?.replace(/^Bearer\s+/i, "") || null;
@@ -36,7 +36,8 @@ export async function PATCH(
     );
   }
 
-  const inquiryId = Number(params.id);
+  const { id } = await params;
+  const inquiryId = Number(id);
 
   if (!inquiryId) {
     return NextResponse.json(
