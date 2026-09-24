@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation";
 import { supabase } from "./lib/supabaseClient";
 import PropertyMap from "./components/PropertyMap";
 import AuthButton from "./components/AuthButton";
+import {
+  SavedSearchFilters,
+  defaultSearchName,
+} from "./lib/savedSearch";
 
 type Property = {
   id: number;
@@ -269,6 +273,26 @@ export default function Home() {
     highlightedId,
     setHighlightedId,
   ] = useState<number | null>(null);
+
+  const [
+    saveSearchOpen,
+    setSaveSearchOpen,
+  ] = useState(false);
+
+  const [
+    saveSearchName,
+    setSaveSearchName,
+  ] = useState("");
+
+  const [
+    savingSearch,
+    setSavingSearch,
+  ] = useState(false);
+
+  const [
+    saveSearchMessage,
+    setSaveSearchMessage,
+  ] = useState("");
 
   const dragStartY = useRef<number | null>(null);
 
@@ -942,6 +966,79 @@ export default function Home() {
   }
 
 
+  // SAVED SEARCHES
+
+  function currentFilters(): SavedSearchFilters {
+    return {
+      propertyType,
+      bhk,
+      minPrice: minPrice ? Number(minPrice) : null,
+      maxPrice: maxPrice ? Number(maxPrice) : null,
+      facing,
+      parking,
+      minRoadWidth: minRoadWidth ? Number(minRoadWidth) : null,
+      location: searchLocation
+        ? {
+            lat: searchLocation.lat,
+            lng: searchLocation.lng,
+            label: searchText || "your search area",
+          }
+        : null,
+      radiusKm: searchRadiusKm,
+    };
+  }
+
+  function openSaveSearch() {
+    if (!userId) {
+      router.push("/auth");
+      return;
+    }
+
+    setSaveSearchMessage("");
+    setSaveSearchName(defaultSearchName(currentFilters()));
+    setSaveSearchOpen(true);
+  }
+
+  async function handleSaveSearch() {
+    if (!userId) {
+      router.push("/auth");
+      return;
+    }
+
+    const name = saveSearchName.trim();
+
+    if (!name) {
+      setSaveSearchMessage("Give this search a name.");
+      return;
+    }
+
+    setSavingSearch(true);
+    setSaveSearchMessage("");
+
+    const { error } = await supabase.from("saved_searches").insert({
+      user_id: userId,
+      name,
+      filters: currentFilters(),
+    });
+
+    setSavingSearch(false);
+
+    if (error) {
+      setSaveSearchMessage(error.message);
+      return;
+    }
+
+    setSaveSearchMessage(
+      "Saved! We'll alert you when a matching listing is approved."
+    );
+
+    setTimeout(() => {
+      setSaveSearchOpen(false);
+      setSaveSearchMessage("");
+    }, 2500);
+  }
+
+
   return (
     <div className="min-h-screen bg-zinc-50">
 
@@ -1278,7 +1375,63 @@ export default function Home() {
               </button>
             )}
 
+
+            <button
+              type="button"
+              onClick={openSaveSearch}
+              className="shrink-0 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:border-accent/40 hover:text-accent"
+            >
+              🔔 Save Search
+            </button>
+
           </div>
+
+
+          {saveSearchOpen && (
+            <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-accent/20 bg-accent-soft p-4 sm:flex-row sm:items-center">
+
+              <div className="flex-1">
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
+                  Alert name
+                </label>
+
+                <input
+                  value={saveSearchName}
+                  onChange={(e) =>
+                    setSaveSearchName(e.target.value)
+                  }
+                  placeholder="Example: 3 BHK in Vaishali Nagar"
+                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm outline-none"
+                />
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleSaveSearch}
+                  disabled={savingSearch}
+                  className="rounded-xl bg-accent px-4 py-2.5 text-sm font-bold text-white transition hover:opacity-90 disabled:opacity-50"
+                >
+                  {savingSearch ? "Saving..." : "Save & Get Alerts"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setSaveSearchOpen(false)}
+                  className="rounded-xl px-3 py-2.5 text-sm font-semibold text-zinc-500"
+                >
+                  Cancel
+                </button>
+              </div>
+
+              {saveSearchMessage && (
+                <p className="text-sm font-medium text-accent sm:basis-full">
+                  {saveSearchMessage}
+                </p>
+              )}
+
+            </div>
+          )}
 
 
           {showMoreFilters && (

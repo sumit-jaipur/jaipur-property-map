@@ -10,6 +10,7 @@ export default function AuthButton() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [accountTypeLabel, setAccountTypeLabel] = useState("Buyer");
   const [open, setOpen] = useState(false);
+  const [unseenAlertCount, setUnseenAlertCount] = useState(0);
 
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -21,6 +22,7 @@ export default function AuthButton() {
     if (!user) {
       setEmail(null);
       setIsAdmin(false);
+      setUnseenAlertCount(0);
       return;
     }
 
@@ -34,6 +36,14 @@ export default function AuthButton() {
 
     setIsAdmin(profile?.role === "admin");
     setAccountTypeLabel(getAccountTypeLabel(profile?.account_type));
+
+    const { count } = await supabase
+      .from("search_alerts")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("seen", false);
+
+    setUnseenAlertCount(count ?? 0);
   }
 
   useEffect(() => {
@@ -96,8 +106,14 @@ export default function AuthButton() {
         onClick={() => setOpen((current) => !current)}
         className="flex items-center gap-2 rounded-xl border border-zinc-200 bg-white px-2.5 py-2 shadow-sm transition hover:border-red-200 hover:bg-red-50"
       >
-        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-700 text-sm font-bold text-white shadow-sm">
+        <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-red-500 to-red-700 text-sm font-bold text-white shadow-sm">
           {initial}
+
+          {unseenAlertCount > 0 && (
+            <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white ring-2 ring-white">
+              {unseenAlertCount > 9 ? "9+" : unseenAlertCount}
+            </span>
+          )}
         </div>
 
         <div className="hidden max-w-36 text-left lg:block">
@@ -146,9 +162,35 @@ export default function AuthButton() {
             )}
 
             <Link
+              href="/alerts"
+              onClick={() => setOpen(false)}
+              className="mt-1 flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 hover:text-red-600"
+            >
+              <span className="flex items-center gap-3">
+                <span>🔔</span>
+                Alerts
+              </span>
+
+              {unseenAlertCount > 0 && (
+                <span className="rounded-full bg-accent px-2 py-0.5 text-[11px] font-bold text-white">
+                  {unseenAlertCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              href="/saved-searches"
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 hover:text-red-600"
+            >
+              <span>🔍</span>
+              Saved Searches
+            </Link>
+
+            <Link
               href="/favorites"
               onClick={() => setOpen(false)}
-              className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 hover:text-red-600"
+              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 hover:text-red-600"
             >
               <span>❤️</span>
               My Favorites

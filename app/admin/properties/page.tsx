@@ -113,6 +113,39 @@ export default function AdminPropertiesPage() {
           : property
       )
     );
+
+    // Approving a listing is the moment it goes live for buyers, so this
+    // is also the moment saved-search alerts should fire -- check the
+    // newly-approved listing against every active saved search right
+    // away instead of waiting on a separate job.
+    if (newStatus === "approved") {
+      await notifySavedSearchMatches(propertyId);
+    }
+  }
+
+  async function notifySavedSearchMatches(propertyId: number) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) return;
+
+    const response = await fetch("/api/alerts/notify-matches", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({ propertyId }),
+    });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      setError(
+        "Listing approved, but saved-search alerts could not be sent: " +
+          (result?.error || "unknown error")
+      );
+    }
   }
 
   // "Featured Listing and Ad Badges" -- built 2026-09-23 from an approved
