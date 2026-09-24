@@ -14,7 +14,10 @@ import { supabaseAdmin, verifyAdmin } from "../../../lib/supabaseAdmin";
 //
 // Requires the inquiries-sales-pipeline migration to have been run first
 // (adds status/assigned_to/admin_notes/updated_at to `inquiries`, plus two
-// admin-only RLS policies) -- see the project docs.
+// admin-only RLS policies), AND the inquiries-manual-leads-and-profile-phone
+// migration (makes buyer_id optional, adds contact_name/contact_phone/
+// source for leads added manually below, not through the website form) --
+// see the project docs.
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get("authorization");
   const accessToken = authHeader?.replace(/^Bearer\s+/i, "") || null;
@@ -31,7 +34,7 @@ export async function GET(request: NextRequest) {
   const { data: inquiries, error: inquiriesError } = await supabaseAdmin
     .from("inquiries")
     .select(
-      "id, property_id, buyer_id, message, status, assigned_to, admin_notes, created_at, updated_at, properties (id, title, type, price, image)"
+      "id, property_id, buyer_id, contact_name, contact_phone, source, message, status, assigned_to, admin_notes, created_at, updated_at, properties (id, title, type, price, image)"
     )
     .order("created_at", { ascending: false });
 
@@ -86,8 +89,87 @@ export async function GET(request: NextRequest) {
 
   const rows = (inquiries || []).map((i) => ({
     ...i,
-    buyerEmail: emailById.get(i.buyer_id as string) || "(unknown)",
+    // A row from the website form has a real buyer_id -> show their
+    // account email. A manually-added lead (phone call/WhatsApp/walk-in)
+    // has no buyer_id -- show the name/phone the admin typed in instead.
+    buyerEmail: i.buyer_id
+      ? emailById.get(i.buyer_id as string) || "(unknown)"
+      : null,
   }));
 
   return NextResponse.json({ inquiries: rows, brokers });
+}
+
+const VALID_SOURCES = ["phone_call", "whatsapp", "walk_in", "other"];
+
+// POST /api/admin/inquiries
+// Body: { contactName: string, contactPhone: string, source: string, message?: string }
+// Header: Authorization: Bearer <supabase access token of a logged-in admin>
+//
+// Manually registers a lead that came from a phone call, WhatsApp message,
+// or walk-in -- someone who never used the website's own inquiry form and
+// so has no buyer_id/account. Lands in the same pipeline as website
+// inquiries, just with no linked account and no property (the admin notes
+// which property, if any, in the message instead, to keep this quick to
+// fill in). Requires the inquiries-manual-leads-and-profile-phone
+// migration to have been run first.
+export async function POST(request: NextRequest) {
+  const authHeader = request.headers.get("authorization");
+  const accessToken = authHeader?.replace(/^Bearer\s+/i, "") || null;
+
+  const adminId = await verifyAdmin(accessToken);
+
+  if (!adminId) {
+    return NextResponse.json(
+      { error: "Admin access required." },
+      { status: 403 }
+    );
+  }
+
+  const body = await request.json().catch(() => null);
+
+  if (!body || !body.contactName || !body.contactPhone) {
+    return NextResponse.json(
+      { error: "contactName and contactPhone are required." },
+      { status: 400 }
+    );
+  }
+
+  if (!VALID_SOURCES.includes(body.source)) {
+    return NextResponse.json(
+      {
+        error:
+          "source must be phone_call, whatsapp, walk_in, or other.",
+      },
+      { status: 400 }
+    );
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from("inquiries")
+    .insert({
+      buyer_id: null,
+      contact_name: String(body.contactName).slice(0, 200),
+      contact_phone: String(body.contactPhone).slice(0, 30),
+      source: body.source,
+      message: body.message
+        ? String(body.message).slice(0, 2000)
+        : "(Added manually by admin -- no message given.)",
+      status: "new",
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    return NextResponse.json(
+      {
+        error:
+          "Failed to add lead (has the inquiries-manual-leads-and-profile-phone migration been run?): " +
+          error.message,
+      },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ success: true, id: data.id });
 }
