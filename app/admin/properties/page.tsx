@@ -231,6 +231,13 @@ export default function AdminPropertiesPage() {
               Blog Studio
             </Link>
 
+            <Link
+              href="/admin/inquiries"
+              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
+            >
+              Sales Pipeline
+            </Link>
+
             <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white">
               Admin Dashboard
             </span>

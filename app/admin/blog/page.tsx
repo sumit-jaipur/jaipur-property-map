@@ -379,6 +379,13 @@ export default function AdminBlogPage() {
             <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white">
               Blog Studio
             </span>
+
+            <Link
+              href="/admin/inquiries"
+              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
+            >
+              Sales Pipeline
+            </Link>
           </div>
 
         </div>
