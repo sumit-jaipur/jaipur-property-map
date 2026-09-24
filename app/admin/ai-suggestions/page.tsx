@@ -47,6 +47,9 @@ type MarketTrendCategory =
   | "marketing"
   | "features"
   | "monetization"
+  | "trust_legal"
+  | "rental_management"
+  | "financing"
   | "general";
 
 const CATEGORY_LABELS: Record<MarketTrendCategory, string> = {
@@ -55,6 +58,9 @@ const CATEGORY_LABELS: Record<MarketTrendCategory, string> = {
   marketing: "Marketing",
   features: "Product Features",
   monetization: "Monetization",
+  trust_legal: "Trust & Legal",
+  rental_management: "Rental & Property Mgmt",
+  financing: "Financing",
   general: "General",
 };
 
@@ -1046,11 +1052,17 @@ export default function AiSuggestionsPage() {
               </h2>
 
               <p className="mt-1 text-sm text-zinc-500">
-                Gemini searches the web across design, SEO &amp; content,
-                marketing, product features, and monetization -- what&apos;s
-                working for platforms like Zillow, 99acres, MagicBricks, and
-                NoBroker -- and drafts recommendations for 99Bricks. This is
-                platform-wide research, not tied to one listing.
+                Gemini searches the web across eight areas -- design, SEO
+                &amp; content, marketing, product features, monetization,
+                trust &amp; legal compliance, rental &amp; property
+                management, and financing -- not limited to a fixed list,
+                and not limited to Indian platforms -- looking at real
+                estate platforms worldwide (Zillow, Redfin, 99acres,
+                MagicBricks, NoBroker, and others) for what&apos;s working,
+                with a real eye on which features actually make money, then
+                drafts recommendations for what&apos;s realistic for a
+                Jaipur-focused platform. This is platform-wide research, not
+                tied to one listing.
               </p>
             </div>
 

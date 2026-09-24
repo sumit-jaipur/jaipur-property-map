@@ -5,17 +5,19 @@ import { generateMarketTrendResearch } from "../../../../lib/gemini";
 // POST /api/admin/ai-suggestions/generate-market-trends
 // Header: Authorization: Bearer <supabase access token of a logged-in admin>
 //
-// Runs five live-web-search-grounded Gemini queries (search via Tavily, not
+// Runs eight live-web-search-grounded Gemini queries (search via Tavily, not
 // Gemini's own Google Search grounding tool -- see app/lib/gemini.ts for
 // why), one per platform area -- design, SEO/content, marketing, product
-// features, monetization -- and writes the result into ai_suggestions as
+// features, monetization, trust & legal compliance, rental & property
+// management, financing -- and writes the result into ai_suggestions as
 // SEVERAL "market_trend" rows (status: pending, target_property_id: null --
 // this is platform-wide research, not tied to one listing):
 //   - one "overview" row (the "what's working" summary) -- read-only,
 //     Approve just marks it reviewed, same as before.
 //   - one "recommendation" row PER recommendation, each tagged "content" or
 //     "feature" AND a category (design/seo_content/marketing/features/
-//     monetization) -- see generateMarketTrendResearch in app/lib/gemini.ts.
+//     monetization/trust_legal/rental_management/financing) -- see
+//     generateMarketTrendResearch in app/lib/gemini.ts.
 //     Approving a recommendation row queues it into build_queue for Claude
 //     to actually act on next -- drafting/publishing an article for a
 //     "content" one (via the blog system), or building the feature for a

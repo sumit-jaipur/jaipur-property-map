@@ -119,6 +119,9 @@ export type MarketTrendCategory =
   | "marketing"
   | "features"
   | "monetization"
+  | "trust_legal"
+  | "rental_management"
+  | "financing"
   | "general";
 
 export type MarketTrendRecommendation = {
@@ -198,14 +201,40 @@ async function tavilySearch(
   }));
 }
 
-// The five areas research is deliberately spread across, each with its own
-// targeted Tavily query naming real competitor platforms (Indian and
-// global) -- so "Research Market Trends" actually surveys the whole
-// platform (design, content/SEO, marketing, product features, and the
+// The areas research is deliberately spread across, each with its own
+// targeted Tavily query -- so "Research Market Trends" actually surveys the
+// whole platform (design, content/SEO, marketing, product features, and the
 // business model) instead of drifting toward whichever topic is easiest to
 // find search results for. This is what Sumit asked for directly: research
 // across "each and every platform" and "each and everything," not just one
 // slice of it.
+//
+// 2026-09-24 update, also from Sumit directly: don't limit this to a short
+// named list of competitors (Indian or otherwise) -- search real estate
+// platforms broadly, worldwide. Each query below names a spread of
+// platforms purely as EXAMPLES to steer the search engine, never as the
+// full set of what to look at, and mixes Indian names (99acres, MagicBricks,
+// NoBroker, Housing.com, Square Yards) with global ones (Zillow, Redfin,
+// Rightmove, Realtor.com, Domain, PropertyGuru, Compass, Opendoor) on
+// purpose -- a feature's country of origin is irrelevant. The monetization
+// query in particular is written to surface actual revenue mechanics
+// (subscriptions, paid placements, lead-gen fees, commissions, ads, data
+// products), not just the word "monetization," since Sumit specifically
+// wants features that make money for the platform, not just ones that look
+// nice.
+//
+// 2026-09-24, second update, also from Sumit: three more research areas
+// added -- trust_legal, rental_management, and financing -- after asking
+// specifically what ELSE could be added beyond the original five. These
+// three were picked because they're the most concretely useful for
+// 99Bricks' actual local market (Jaipur/Rajasthan), not just generic
+// PropTech trend-chasing: trust_legal ties directly into Rajasthan's own
+// RERA portal (project registration numbers, quarterly reports, a public
+// complaint mechanism) which is a real, checkable, India-specific trust
+// signal no global platform's research would ever surface; rental_management
+// matters because 99Bricks already lists both sale AND rent; and financing
+// covers loan/EMI/stamp-duty tooling, a real monetization lever (bank
+// referral commissions) on top of being genuinely useful to buyers.
 const RESEARCH_TOPICS: {
   category: MarketTrendCategory;
   label: string;
@@ -215,31 +244,49 @@ const RESEARCH_TOPICS: {
     category: "design",
     label: "Design & UX",
     query:
-      "real estate website and app UX design best practices 2026 Zillow Redfin 99acres NoBroker Housing.com MagicBricks",
+      "real estate website and app UX design best practices 2026 global platforms Zillow Redfin Rightmove Realtor.com Domain PropertyGuru 99acres NoBroker Housing.com MagicBricks",
   },
   {
     category: "seo_content",
     label: "SEO & Content",
     query:
-      "real estate portal SEO strategy blog content case study 2026 organic traffic",
+      "real estate portal SEO content marketing strategy case study 2026 organic traffic global and Indian platforms",
   },
   {
     category: "marketing",
     label: "Marketing & Lead Generation",
     query:
-      "real estate platform lead generation marketing campaign case study 2026 NoBroker 99acres MagicBricks WhatsApp",
+      "real estate platform lead generation marketing campaign case study 2026 performance marketing global and Indian platforms Zillow NoBroker 99acres MagicBricks WhatsApp",
   },
   {
     category: "features",
     label: "Product Features & Tools",
     query:
-      "real estate platform unique features competitor comparison 2026 AI tools virtual tour saved search alerts property search innovation",
+      "real estate platform unique product features 2026 global competitor comparison AI tools virtual tour saved search alerts instant offers iBuying agent tools innovation",
   },
   {
     category: "monetization",
     label: "Monetization & Business Model",
     query:
-      "real estate portal monetization subscription commission revenue model 2026",
+      "real estate portal monetization revenue model 2026 subscription commission featured listings premium leads verified badge advertising data products Zillow Premier Agent Compass Opendoor 99acres MagicBricks",
+  },
+  {
+    category: "trust_legal",
+    label: "Trust, Verification & Legal Compliance",
+    query:
+      "real estate platform trust verification legal compliance 2026 RERA registration verified badge identity KYC fraud prevention duplicate listing detection dispute resolution global and Indian platforms",
+  },
+  {
+    category: "rental_management",
+    label: "Rental & Property Management",
+    query:
+      "real estate platform rental property management tools 2026 tenant screening digital lease agreement online rent collection maintenance requests global and Indian platforms Zillow TurboTenant NoBroker",
+  },
+  {
+    category: "financing",
+    label: "Financing & Affordability",
+    query:
+      "real estate platform financing mortgage loan tools 2026 EMI calculator stamp duty registration cost calculator bank loan partner integration lead referral global and Indian platforms",
   },
 ];
 
@@ -370,10 +417,15 @@ export async function generateMarketTrendResearch(): Promise<MarketTrendSuggesti
   const prompt = `You are a real estate product strategist doing a
 competitive GAP ANALYSIS for 99Bricks, a small independent map-based
 property platform for Jaipur, India (sale and rent). You are researching
-what real competitor platforms (Zillow, Redfin, 99acres, MagicBricks,
-NoBroker, Housing.com, Square Yards, and similar) are doing right now, and
-comparing it against what 99Bricks already has, to find genuine gaps worth
-building or writing.
+real estate platforms worldwide, not limited to Indian competitors and not
+limited to any fixed list. The search results below already span both
+Indian platforms (99acres, MagicBricks, NoBroker, Housing.com, Square
+Yards) and global ones (Zillow, Redfin, Rightmove, Realtor.com, Domain,
+PropertyGuru, Compass, Opendoor, and similar) on purpose -- a feature's
+country of origin does not matter at all. What matters is only whether it
+is realistically adaptable and valuable for 99Bricks' actual market:
+Jaipur and Rajasthan, India. Compare all of this against what 99Bricks
+already has, to find genuine gaps worth building or writing.
 
 Here is what 99Bricks ALREADY has built -- do not recommend anything
 already on this list, and do not recommend rebuilding it under a different
@@ -381,13 +433,14 @@ name:
 
 ${CURRENT_PLATFORM_CAPABILITIES}
 
-This research deliberately spans FIVE areas of the platform, not just one:
+This research deliberately spans EIGHT areas of the platform, not just one:
 design & UX, SEO & content, marketing & lead generation, product features &
-tools, and monetization & business model. Below are real, current web
-search results covering all five, each labeled with which area it belongs
-to. Use ONLY the information in these results -- do not rely on memory
-alone, and do not invent facts, statistics, or sources beyond what is given
-here.
+tools, monetization & business model, trust/verification/legal compliance,
+rental & property management, and financing & affordability. Below are
+real, current web search results covering all eight, each labeled with
+which area it belongs to. Use ONLY the information in these results -- do
+not rely on memory alone, and do not invent facts, statistics, or sources
+beyond what is given here.
 
 Search results:
 ${searchContext}
@@ -402,7 +455,7 @@ Write three things:
 
 2. "recommendations": 6-10 concrete, actionable recommendations 99Bricks
    could realistically apply, given it is a small Jaipur-focused platform,
-   not a national player. Spread these across the five areas above -- don't
+   not a national player. Spread these across the eight areas above -- don't
    let them all cluster into just one or two areas, and don't let them all
    be content/SEO ideas -- AIM FOR AT LEAST HALF of the recommendations to
    be type "feature": a real, specific, nameable product capability you
@@ -420,13 +473,21 @@ Write three things:
      words). Pick whichever fits best; if a recommendation is really both,
      pick the primary one.
    - "category": exactly one of "design", "seo_content", "marketing",
-     "features", or "monetization" -- whichever area this recommendation
-     belongs to, matching the labeled search results it's grounded in.
+     "features", "monetization", "trust_legal", "rental_management", or
+     "financing" -- whichever area this recommendation belongs to, matching
+     the labeled search results it's grounded in.
    - "title": a short (under 10 words) label for the recommendation -- for
      a feature, name the actual capability, not a vague goal.
    - "detail": 1-3 sentences explaining what to do and why, referencing the
      search results where relevant, and (for a feature) naming which real
-     platform is already doing it.
+     platform is already doing it. Whenever there is a real, realistic
+     revenue angle -- a subscription, a paid placement, a lead-gen fee, a
+     commission, an ad slot, a data product, and so on -- say so explicitly
+     in the detail, even for a recommendation filed under "design",
+     "seo_content", "marketing", or "features" rather than "monetization".
+     Don't force a monetization angle onto something that genuinely doesn't
+     have one (a lot of SEO/content ideas won't), but don't skip mentioning
+     one when it's really there.
 
 3. "sources": the search results you actually drew on, each with its
    "title" and "url" copied exactly from the search results above -- never
@@ -457,6 +518,9 @@ Write three things:
                       "marketing",
                       "features",
                       "monetization",
+                      "trust_legal",
+                      "rental_management",
+                      "financing",
                     ],
                   },
                   title: { type: "STRING" },
@@ -516,6 +580,9 @@ Write three things:
     "marketing",
     "features",
     "monetization",
+    "trust_legal",
+    "rental_management",
+    "financing",
     "general",
   ]);
 
