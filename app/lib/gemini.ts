@@ -235,6 +235,16 @@ async function tavilySearch(
 // matters because 99Bricks already lists both sale AND rent; and financing
 // covers loan/EMI/stamp-duty tooling, a real monetization lever (bank
 // referral commissions) on top of being genuinely useful to buyers.
+//
+// 2026-09-24, third update, also from Sumit: the existing "design" query
+// sharpened to explicitly chase typography/font choices, color psychology,
+// and trust signals -- not just generic "UX best practices" -- because
+// Sumit specifically wants the platform to read as professional AND
+// eye-catching, reasoned from what's actually on a visitor's mind (what are
+// they looking for, what makes them trust a site within seconds) rather
+// than a cosmetic pass. See the matching instruction added to the main
+// prompt below, which asks for the same psychology-first reasoning on every
+// "design" recommendation.
 const RESEARCH_TOPICS: {
   category: MarketTrendCategory;
   label: string;
@@ -244,7 +254,7 @@ const RESEARCH_TOPICS: {
     category: "design",
     label: "Design & UX",
     query:
-      "real estate website and app UX design best practices 2026 global platforms Zillow Redfin Rightmove Realtor.com Domain PropertyGuru 99acres NoBroker Housing.com MagicBricks",
+      "real estate website UI UX design trends 2026 typography font pairing color psychology professional yet eye-catching trust signals first impression global platforms Zillow Redfin Rightmove Realtor.com Domain PropertyGuru 99acres NoBroker Housing.com MagicBricks",
   },
   {
     category: "seo_content",
@@ -487,7 +497,15 @@ Write three things:
      "seo_content", "marketing", or "features" rather than "monetization".
      Don't force a monetization angle onto something that genuinely doesn't
      have one (a lot of SEO/content ideas won't), but don't skip mentioning
-     one when it's really there.
+     one when it's really there. For a "design" recommendation specifically,
+     reason from the psychology of a first-time visitor -- what they're
+     actually looking for in the first few seconds and what makes them trust
+     a property site enough to keep browsing instead of bouncing -- and the
+     platform should read as professional and credible, not just visually
+     loud. Name a concrete, specific change (an actual font pairing, a
+     specific color/contrast or trust-badge treatment, a specific layout or
+     spacing pattern) grounded in the search results, never a vague
+     "make it look better" or "improve the UI".
 
 3. "sources": the search results you actually drew on, each with its
    "title" and "url" copied exactly from the search results above -- never
