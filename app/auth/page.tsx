@@ -12,6 +12,7 @@ export default function AuthPage() {
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [accountType, setAccountType] = useState<AccountType>("buyer");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
@@ -29,6 +30,11 @@ export default function AuthPage() {
       setError(
         "Please agree to the Terms of Service and Privacy Policy to create an account."
       );
+      return;
+    }
+
+    if (mode === "signup" && phone.trim().length < 10) {
+      setError("Please enter a valid phone number (at least 10 digits).");
       return;
     }
 
@@ -63,13 +69,18 @@ export default function AuthPage() {
 
       if (data.user) {
         // Save what kind of account this is (buyer, owner, agent,
-        // broker, builder, colonizer, PG/rental manager) so it can
-        // show up on their profile and on their listings later.
+        // broker, builder, colonizer, PG/rental manager) plus their
+        // phone number, so it can show up on their profile and on
+        // their listings later -- and so brokers/builders/every other
+        // signup is reachable for the Sales team's cold-call list
+        // (see /admin/inquiries -> Signups) instead of showing up
+        // with no phone number.
         const { error: profileError } = await supabase
           .from("profiles")
           .upsert({
             id: data.user.id,
             account_type: accountType,
+            phone: phone.trim(),
           });
 
         if (profileError) {
@@ -158,6 +169,30 @@ export default function AuthPage() {
 
           {mode === "signup" && (
             <div>
+              <label className="block text-sm text-zinc-700 mb-1">
+                Phone Number
+              </label>
+
+              <input
+                type="tel"
+                inputMode="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                minLength={10}
+                placeholder="10-digit mobile number"
+                className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-zinc-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              />
+
+              <p className="mt-1 text-xs text-zinc-400">
+                So our team can reach you about listings or, if you're a
+                broker/builder, partnership opportunities.
+              </p>
+            </div>
+          )}
+
+          {mode === "signup" && (
+            <div>
               <label className="block text-sm text-zinc-700 mb-2">
                 I am a...
               </label>
@@ -218,7 +253,11 @@ export default function AuthPage() {
 
           <button
             type="submit"
-            disabled={loading || (mode === "signup" && !agreedToTerms)}
+            disabled={
+              loading ||
+              (mode === "signup" &&
+                (!agreedToTerms || phone.trim().length < 10))
+            }
             className="w-full bg-red-600 hover:bg-red-700 text-white rounded-lg py-2.5 font-semibold disabled:opacity-50"
           >
             {loading

@@ -1343,6 +1343,153 @@ what it would cover and why it's worth writing.`;
   return parsed.ideas || [];
 }
 
+export type JobPostDraft = {
+  platform: string;
+  title: string;
+  body: string;
+};
+
+export type JobPostEmploymentType = "full_time" | "freelance" | "internship";
+
+// Admin tool (HR department): drafts job-post text for external hiring
+// platforms. 99Bricks itself has no careers page and Sumit was explicit he
+// doesn't want one built yet -- there's no traffic to post jobs to on the
+// platform itself. This is a pure drafting tool: Sumit still has to create
+// the account on each hiring platform himself and paste/publish the text
+// there -- nothing here posts anywhere automatically, and nothing is saved
+// to the database (stateless, generate-and-copy).
+//
+// Each platform gets its own draft written in THAT platform's actual
+// style, not one generic post repeated four times: Naukri formal and
+// structured, Apna short/direct/location-first (the best fit specifically
+// for fresher/field sales roles like a Real Estate Sales Executive, which
+// is what prompted this feature), Internshala framed around
+// learning/mentorship (only generated for an internship or freelance role,
+// since it's the wrong pitch for a full-time senior hire), and Indeed
+// neutral and bullet-based.
+export async function generateJobPostDrafts(input: {
+  roleTitle: string;
+  employmentType: JobPostEmploymentType;
+  details: string;
+}): Promise<JobPostDraft[]> {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    throw new Error(
+      "GEMINI_API_KEY is not set in the environment (.env.local)."
+    );
+  }
+
+  const employmentLabel =
+    input.employmentType === "full_time"
+      ? "Full-time"
+      : input.employmentType === "freelance"
+      ? "Freelance / commission-based"
+      : "Internship";
+
+  const includeInternshala =
+    input.employmentType === "internship" ||
+    input.employmentType === "freelance";
+
+  const prompt = `You are writing job-post text for 99Bricks, a Jaipur,
+India real estate platform, to hire a real person (for example a real
+estate sales executive, a freelance field/site-visit agent, or an intern).
+This text will be pasted directly onto external hiring platforms by a
+human -- you are NOT posting anywhere yourself, and 99Bricks does not have
+its own careers page. Write real, ready-to-paste text, not a template with
+blanks to fill in.
+
+Role: ${input.roleTitle}
+Employment type: ${employmentLabel}
+Location: Jaipur, Rajasthan, India
+What the role involves and requires, as given by the employer: ${input.details}
+
+Write a SEPARATE draft for each platform below, each in ITS OWN actual
+style -- do not write one generic post and repeat it with a different
+label:
+
+1. "Naukri" -- formal and structured: a clear title, a short company blurb
+   for 99Bricks (a Jaipur-focused map-based property platform), then
+   Responsibilities and Requirements as short plain-text paragraphs (no
+   markdown bullets -- Naukri's own posting form has its own fields, so
+   keep this as clean paragraphs the employer can drop in).
+2. "Apna" -- short, direct, and location-first, matching how fresher and
+   field-sales roles actually get filled on Apna: lead with the role,
+   location, and pay/incentive structure if the details imply one, keep
+   sentences short, emphasize quick joining.
+3. "Indeed" -- neutral and professional, structured with short plain-text
+   sections (About the role, Responsibilities, Requirements), similar to
+   Naukri but slightly more concise.
+${
+  includeInternshala
+    ? `4. "Internshala" -- framed around what the intern or freelancer will
+   learn and gain (skills, mentorship, real client exposure), not just
+   what's asked of them -- that framing is what actually gets applications
+   on Internshala.`
+    : ""
+}
+
+Do not invent specific salary numbers, office addresses, or company facts
+that are not in the details given above -- if pay isn't mentioned, don't
+state a number; describe the structure generally if the details imply one
+(for example "performance-based incentive on closed deals" without a
+rupee figure).
+
+For each platform, give "platform" (exactly the platform name above),
+"title" (the job title line as it should appear on that platform), and
+"body" (the full post text, ready to paste as-is).`;
+
+  const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: "OBJECT",
+          properties: {
+            drafts: {
+              type: "ARRAY",
+              items: {
+                type: "OBJECT",
+                properties: {
+                  platform: { type: "STRING" },
+                  title: { type: "STRING" },
+                  body: { type: "STRING" },
+                },
+                required: ["platform", "title", "body"],
+              },
+            },
+          },
+          required: ["drafts"],
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Gemini API error (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+
+  const text: string | undefined =
+    data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+  if (!text) {
+    throw new Error(
+      "Gemini API returned no usable content. Raw response: " +
+        JSON.stringify(data)
+    );
+  }
+
+  const parsed = JSON.parse(text) as { drafts: JobPostDraft[] };
+
+  return parsed.drafts || [];
+}
+
 export type BlogArticleDraft = {
   title: string;
   slug: string;
