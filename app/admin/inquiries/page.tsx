@@ -752,9 +752,9 @@ export default function AdminInquiriesPage() {
         {view === "signups" && (
           <>
             <div className="mb-5 rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-700">
-              Most accounts here won&apos;t have a phone number yet -- the
-              signup form doesn&apos;t collect one. This list is real, but
-              only becomes fully callable once that&apos;s added.
+              Signup now collects a phone number, so every new signup from
+              here on will be callable. Accounts created before that change
+              will still show no phone until they sign up again.
             </div>
 
             {signupsLoading && (
