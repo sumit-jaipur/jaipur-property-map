@@ -34,7 +34,20 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
   function useCurrentLocation() {
     if (!navigator.geolocation) {
       setLocateError(
-        "Location is not supported on this device."
+        "Location is not supported on this browser. Please place the pin manually."
+      );
+      return;
+    }
+
+    // The geolocation API only works over a secure (https) connection --
+    // always true on the live site, but this makes the failure clear
+    // instead of a silent/confusing one if it's ever not.
+    if (
+      typeof window !== "undefined" &&
+      window.isSecureContext === false
+    ) {
+      setLocateError(
+        "Location only works over a secure (https) connection. Please place the pin manually."
       );
       return;
     }
@@ -50,11 +63,38 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
         );
         setLocating(false);
       },
-      () => {
-        setLocateError(
-          "Could not get your location. Please place the pin manually."
-        );
+      (err) => {
         setLocating(false);
+
+        // The old version showed one generic message no matter what
+        // went wrong. Each of these actually needs a different fix from
+        // whoever is filling the form, so tell them which one applies.
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocateError(
+            "Location access is blocked for this site. Click the lock/info icon next to the browser address bar, allow \"Location,\" then try again."
+          );
+        } else if (err.code === err.POSITION_UNAVAILABLE) {
+          setLocateError(
+            "Your device couldn't determine a location. On Windows: Settings -> Privacy & security -> Location -- make sure Location Services is ON and your browser is allowed. On a phone, make sure GPS/Location is turned on."
+          );
+        } else if (err.code === err.TIMEOUT) {
+          setLocateError(
+            "Getting your location took too long. Check your internet/GPS signal (and that your laptop isn't in a low-power/sleep state) and try again."
+          );
+        } else {
+          setLocateError(
+            "Could not get your location. Please place the pin manually."
+          );
+        }
+      },
+      {
+        // Ask for GPS-grade accuracy when the device has it (phones in
+        // the field), don't hang forever if it's slow to resolve, and
+        // never reuse a stale cached fix -- a seller/builder using this
+        // on-site needs the position where they're standing right now.
+        enableHighAccuracy: true,
+        timeout: 12000,
+        maximumAge: 0,
       }
     );
   }
