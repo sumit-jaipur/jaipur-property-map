@@ -1,10 +1,14 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
 import LocationPicker from "../../../components/LocationPicker";
+
+const MAX_PHOTOS = 15;
+
+type ExistingPhoto = { id: number; url: string };
 
 export default function EditPropertyPage() {
   const params = useParams();
@@ -16,10 +20,17 @@ export default function EditPropertyPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
   const [error, setError] = useState("");
 
-  const [currentImage, setCurrentImage] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  // Photos already saved on this listing (loaded from property_media),
+  // separate from new ones being added in this edit session.
+  const [existingPhotos, setExistingPhotos] = useState<ExistingPhoto[]>([]);
+  const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
+
+  const [currentVideoUrl, setCurrentVideoUrl] = useState<string | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [removeVideo, setRemoveVideo] = useState(false);
 
   const [form, setForm] = useState({
     title: "",
@@ -75,7 +86,22 @@ export default function EditPropertyPage() {
         status: data.status ?? "Available",
       });
 
-      setCurrentImage(data.image ?? "");
+      setCurrentVideoUrl(data.video_url ?? null);
+
+      const { data: media } = await supabase
+        .from("property_media")
+        .select("id, url")
+        .eq("property_id", propertyId)
+        .order("sort_order", { ascending: true });
+
+      if (media && media.length > 0) {
+        setExistingPhotos(media as ExistingPhoto[]);
+      } else if (data.image) {
+        // Old listing from before the gallery existed -- fall back to its
+        // single cover image so it doesn't look empty.
+        setExistingPhotos([{ id: -1, url: data.image }]);
+      }
+
       setLoading(false);
     }
 
@@ -91,6 +117,30 @@ export default function EditPropertyPage() {
       ...form,
       [e.target.name]: e.target.value,
     });
+  }
+
+  const totalPhotoCount = existingPhotos.length + newImageFiles.length;
+
+  function handlePhotosSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+
+    if (picked.length === 0) return;
+
+    setNewImageFiles((prev) => {
+      const combined = [...prev, ...picked];
+      const room = Math.max(0, MAX_PHOTOS - existingPhotos.length);
+      return combined.slice(0, room);
+    });
+
+    e.target.value = "";
+  }
+
+  function removeExistingPhoto(id: number) {
+    setExistingPhotos((prev) => prev.filter((p) => p.id !== id));
+  }
+
+  function removeNewPhoto(index: number) {
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -119,33 +169,34 @@ export default function EditPropertyPage() {
       return;
     }
 
+    if (totalPhotoCount > MAX_PHOTOS) {
+      setError(`You can have up to ${MAX_PHOTOS} photos.`);
+      return;
+    }
+
     setSaving(true);
 
-    let imageUrl =
-      currentImage ||
-      "https://placehold.co/900x600?text=Property";
+    // 1) Upload any newly added photos.
+    const newImageUrls: string[] = [];
 
-    if (imageFile) {
-      const safeName = imageFile.name.replace(
-        /[^a-zA-Z0-9._-]/g,
-        "-"
+    for (let i = 0; i < newImageFiles.length; i++) {
+      const file = newImageFiles[i];
+
+      setUploadProgress(
+        `Uploading photo ${i + 1} of ${newImageFiles.length}...`
       );
 
-      const fileName =
-        `${user.id}/${Date.now()}-${safeName}`;
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const fileName = `${user.id}/${Date.now()}-${i}-${safeName}`;
 
-      const { error: uploadError } =
-        await supabase.storage
-          .from("property-images")
-          .upload(fileName, imageFile);
+      const { error: uploadError } = await supabase.storage
+        .from("property-images")
+        .upload(fileName, file);
 
       if (uploadError) {
-        setError(
-          "Image upload failed: " +
-            uploadError.message
-        );
-
+        setError(`Photo ${i + 1} failed to upload: ${uploadError.message}`);
         setSaving(false);
+        setUploadProgress("");
         return;
       }
 
@@ -153,8 +204,49 @@ export default function EditPropertyPage() {
         .from("property-images")
         .getPublicUrl(fileName);
 
-      imageUrl = data.publicUrl;
+      newImageUrls.push(data.publicUrl);
     }
+
+    // 2) Handle the video: keep as-is, replace, or remove.
+    let videoUrl: string | null = currentVideoUrl;
+
+    if (videoFile) {
+      setUploadProgress("Uploading video tour...");
+
+      const safeName = videoFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const fileName = `${user.id}/videos/${Date.now()}-${safeName}`;
+
+      const { error: videoUploadError } = await supabase.storage
+        .from("property-images")
+        .upload(fileName, videoFile);
+
+      if (videoUploadError) {
+        setError(`Video upload failed: ${videoUploadError.message}`);
+        setSaving(false);
+        setUploadProgress("");
+        return;
+      }
+
+      const { data } = supabase.storage
+        .from("property-images")
+        .getPublicUrl(fileName);
+
+      videoUrl = data.publicUrl;
+    } else if (removeVideo) {
+      videoUrl = null;
+    }
+
+    setUploadProgress("Saving listing...");
+
+    // Final gallery order: photos kept from before, then any newly added
+    // ones -- the first photo overall becomes the new cover image.
+    const finalUrls = [
+      ...existingPhotos.map((p) => p.url),
+      ...newImageUrls,
+    ];
+
+    const coverImage =
+      finalUrls[0] || "https://placehold.co/900x600?text=Property";
 
     const { error: updateError } = await supabase
       .from("properties")
@@ -169,18 +261,46 @@ export default function EditPropertyPage() {
         road: form.road.trim(),
         lat: Number(form.lat),
         lng: Number(form.lng),
-        image: imageUrl,
+        image: coverImage,
+        video_url: videoUrl,
         status: form.status,
       })
       .eq("id", propertyId)
       .eq("seller_id", user.id);
 
-    setSaving(false);
-
     if (updateError) {
+      setSaving(false);
+      setUploadProgress("");
       setError(updateError.message);
       return;
     }
+
+    // Re-sync the gallery table: clear what was there for this property,
+    // then save the final photo list in order. Simpler and safer than
+    // trying to diff individual rows.
+    await supabase
+      .from("property_media")
+      .delete()
+      .eq("property_id", propertyId);
+
+    if (finalUrls.length > 0) {
+      const { error: mediaError } = await supabase
+        .from("property_media")
+        .insert(
+          finalUrls.map((url, index) => ({
+            property_id: Number(propertyId),
+            url,
+            sort_order: index,
+          }))
+        );
+
+      if (mediaError) {
+        console.error("Failed to save photo gallery:", mediaError);
+      }
+    }
+
+    setSaving(false);
+    setUploadProgress("");
 
     router.push("/my-properties");
     router.refresh();
@@ -487,32 +607,156 @@ export default function EditPropertyPage() {
 
             <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
 
-              <h2 className="text-lg font-black text-zinc-900">
-                Property image
+              <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+                Property photos
+              </p>
+
+              <h2 className="mt-1 text-lg font-black text-zinc-900">
+                {totalPhotoCount} of {MAX_PHOTOS} photos
               </h2>
 
-              {currentImage && (
-                <img
-                  src={currentImage}
-                  alt="Current property"
-                  className="mt-4 h-44 w-full rounded-2xl object-cover"
-                />
+              {existingPhotos.length > 0 && (
+                <div className="mt-4 grid grid-cols-3 gap-2">
+                  {existingPhotos.map((photo, index) => (
+                    <div
+                      key={photo.id}
+                      className="group relative aspect-square overflow-hidden rounded-xl border border-zinc-200"
+                    >
+                      <img
+                        src={photo.url}
+                        alt={`Photo ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+
+                      {index === 0 && (
+                        <span className="absolute left-1 top-1 rounded-md bg-zinc-900/80 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                          Cover
+                        </span>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => removeExistingPhoto(photo.id)}
+                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-xs font-bold text-white opacity-0 transition group-hover:opacity-100"
+                        aria-label={`Remove photo ${index + 1}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {newImageFiles.length > 0 && (
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  {newImageFiles.map((file, index) => (
+                    <div
+                      key={`${file.name}-${index}`}
+                      className="group relative aspect-square overflow-hidden rounded-xl border border-emerald-200"
+                    >
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`New photo ${index + 1}`}
+                        className="h-full w-full object-cover"
+                      />
+
+                      <span className="absolute left-1 top-1 rounded-md bg-emerald-600/90 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                        New
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={() => removeNewPhoto(index)}
+                        className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-xs font-bold text-white opacity-0 transition group-hover:opacity-100"
+                        aria-label={`Remove new photo ${index + 1}`}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
               )}
 
               <p className="mt-4 text-sm font-semibold text-zinc-700">
-                Replace image
+                Add more photos
               </p>
 
               <input
                 type="file"
                 accept="image/*"
-                onChange={(e) =>
-                  setImageFile(
-                    e.target.files?.[0] ?? null
-                  )
-                }
+                multiple
+                disabled={totalPhotoCount >= MAX_PHOTOS}
+                onChange={handlePhotosSelected}
+                className="mt-3 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-red-50 file:px-3 file:py-2 file:font-semibold file:text-red-600 disabled:opacity-50"
+              />
+
+            </section>
+
+
+            <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+
+              <h2 className="text-lg font-black text-zinc-900">
+                Video tour
+              </h2>
+
+              {currentVideoUrl && !removeVideo && !videoFile && (
+                <div className="mt-3 space-y-2">
+                  <video
+                    src={currentVideoUrl}
+                    controls
+                    className="w-full rounded-xl"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setRemoveVideo(true)}
+                    className="text-xs font-semibold text-red-600 hover:underline"
+                  >
+                    Remove video
+                  </button>
+                </div>
+              )}
+
+              {removeVideo && (
+                <p className="mt-3 text-xs font-semibold text-zinc-500">
+                  Video will be removed when you save.{" "}
+                  <button
+                    type="button"
+                    onClick={() => setRemoveVideo(false)}
+                    className="text-red-600 hover:underline"
+                  >
+                    Undo
+                  </button>
+                </p>
+              )}
+
+              <p className="mt-4 text-sm font-semibold text-zinc-700">
+                {currentVideoUrl ? "Replace video" : "Add a video tour"}
+              </p>
+
+              <input
+                type="file"
+                accept="video/*"
+                onChange={(e) => {
+                  setVideoFile(e.target.files?.[0] ?? null);
+                  setRemoveVideo(false);
+                }}
                 className="mt-3 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-red-50 file:px-3 file:py-2 file:font-semibold file:text-red-600"
               />
+
+              {videoFile && (
+                <div className="mt-3 flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                  <span className="truncate">{videoFile.name}</span>
+
+                  <button
+                    type="button"
+                    onClick={() => setVideoFile(null)}
+                    className="ml-2 shrink-0 text-emerald-700/70 hover:text-emerald-900"
+                  >
+                    Remove
+                  </button>
+                </div>
+              )}
 
             </section>
 
@@ -558,7 +802,7 @@ export default function EditPropertyPage() {
                 className="mt-5 w-full rounded-2xl bg-red-600 px-5 py-3.5 font-bold text-white transition hover:bg-red-500 disabled:opacity-50"
               >
                 {saving
-                  ? "Saving..."
+                  ? uploadProgress || "Saving..."
                   : "Save Changes"}
               </button>
 

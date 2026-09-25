@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -6,13 +6,21 @@ import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 import LocationPicker from "../components/LocationPicker";
 
+const MAX_PHOTOS = 15;
+
 export default function AddPropertyPage() {
   const router = useRouter();
 
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
   const [error, setError] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  // Up to 15 photos -- the seller/builder can select several at once from
+  // the file picker (or add more in a second pick), plus one optional
+  // video tour of the property.
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -53,6 +61,25 @@ export default function AddPropertyPage() {
     });
   }
 
+  function handlePhotosSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = Array.from(e.target.files ?? []);
+
+    if (picked.length === 0) return;
+
+    setImageFiles((prev) => {
+      const combined = [...prev, ...picked];
+      return combined.slice(0, MAX_PHOTOS);
+    });
+
+    // Let the same input be used again to add more photos in a second
+    // pick without the browser thinking nothing changed.
+    e.target.value = "";
+  }
+
+  function removePhoto(index: number) {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -79,31 +106,35 @@ export default function AddPropertyPage() {
       return;
     }
 
+    if (imageFiles.length > MAX_PHOTOS) {
+      setError(`You can upload up to ${MAX_PHOTOS} photos.`);
+      return;
+    }
+
     setSaving(true);
 
-    let imageUrl =
-      "https://placehold.co/900x600?text=Property";
+    // 1) Upload every selected photo, in the order they were added, so
+    //    the gallery matches what the seller picked.
+    const imageUrls: string[] = [];
 
-    if (imageFile) {
-      const safeName = imageFile.name.replace(
-        /[^a-zA-Z0-9._-]/g,
-        "-"
+    for (let i = 0; i < imageFiles.length; i++) {
+      const file = imageFiles[i];
+
+      setUploadProgress(
+        `Uploading photo ${i + 1} of ${imageFiles.length}...`
       );
 
-      const fileName =
-        `${user.id}/${Date.now()}-${safeName}`;
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const fileName = `${user.id}/${Date.now()}-${i}-${safeName}`;
 
-      const { error: uploadError } =
-        await supabase.storage
-          .from("property-images")
-          .upload(fileName, imageFile);
+      const { error: uploadError } = await supabase.storage
+        .from("property-images")
+        .upload(fileName, file);
 
       if (uploadError) {
-        setError(
-          "Image upload failed: " +
-            uploadError.message
-        );
+        setError(`Photo ${i + 1} failed to upload: ${uploadError.message}`);
         setSaving(false);
+        setUploadProgress("");
         return;
       }
 
@@ -111,10 +142,42 @@ export default function AddPropertyPage() {
         .from("property-images")
         .getPublicUrl(fileName);
 
-      imageUrl = data.publicUrl;
+      imageUrls.push(data.publicUrl);
     }
 
-    const { error: insertError } = await supabase
+    // 2) Upload the video tour, if one was picked.
+    let videoUrl: string | null = null;
+
+    if (videoFile) {
+      setUploadProgress("Uploading video tour...");
+
+      const safeName = videoFile.name.replace(/[^a-zA-Z0-9._-]/g, "-");
+      const fileName = `${user.id}/videos/${Date.now()}-${safeName}`;
+
+      const { error: videoUploadError } = await supabase.storage
+        .from("property-images")
+        .upload(fileName, videoFile);
+
+      if (videoUploadError) {
+        setError(`Video upload failed: ${videoUploadError.message}`);
+        setSaving(false);
+        setUploadProgress("");
+        return;
+      }
+
+      const { data } = supabase.storage
+        .from("property-images")
+        .getPublicUrl(fileName);
+
+      videoUrl = data.publicUrl;
+    }
+
+    setUploadProgress("Saving listing...");
+
+    const coverImage =
+      imageUrls[0] || "https://placehold.co/900x600?text=Property";
+
+    const { data: inserted, error: insertError } = await supabase
       .from("properties")
       .insert({
         seller_id: user.id,
@@ -128,16 +191,43 @@ export default function AddPropertyPage() {
         road: form.road.trim(),
         lat: Number(form.lat),
         lng: Number(form.lng),
-        image: imageUrl,
+        image: coverImage,
+        video_url: videoUrl,
         status: "Available",
-      });
+      })
+      .select("id")
+      .single();
 
-    setSaving(false);
-
-    if (insertError) {
-      setError(insertError.message);
+    if (insertError || !inserted) {
+      setSaving(false);
+      setUploadProgress("");
+      setError(insertError?.message || "Failed to save listing.");
       return;
     }
+
+    // 3) Save the full photo gallery (cover photo included, so the
+    //    gallery order matches exactly what was uploaded).
+    if (imageUrls.length > 0) {
+      const { error: mediaError } = await supabase
+        .from("property_media")
+        .insert(
+          imageUrls.map((url, index) => ({
+            property_id: inserted.id,
+            url,
+            sort_order: index,
+          }))
+        );
+
+      if (mediaError) {
+        // The listing itself was created fine -- the cover photo is
+        // already saved on it -- so don't block the seller on this, just
+        // surface it.
+        console.error("Failed to save photo gallery:", mediaError);
+      }
+    }
+
+    setSaving(false);
+    setUploadProgress("");
 
     router.push("/my-properties");
     router.refresh();
@@ -445,12 +535,18 @@ export default function AddPropertyPage() {
             <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
 
               <p className="text-xs font-bold uppercase tracking-wider text-red-500">
-                Property photo
+                Property photos
               </p>
 
               <h2 className="mt-1 text-lg font-black text-zinc-900">
-                Add a cover image
+                Add up to {MAX_PHOTOS} photos
               </h2>
+
+              <p className="mt-1 text-xs text-zinc-500">
+                The first photo becomes the cover image shown on listing
+                cards. Select several at once, or add more in a second
+                pick.
+              </p>
 
               <div className="mt-4 rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
 
@@ -459,29 +555,107 @@ export default function AddPropertyPage() {
                 </div>
 
                 <p className="mt-3 text-sm font-semibold text-zinc-700">
-                  Choose property image
+                  Choose property photos
                 </p>
 
                 <p className="mt-1 text-xs text-zinc-400">
-                  JPG, PNG or WebP
+                  JPG, PNG or WebP · up to {MAX_PHOTOS} photos
                 </p>
 
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={(e) =>
-                    setImageFile(
-                      e.target.files?.[0] ?? null
-                    )
-                  }
-                  className="mt-4 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-red-50 file:px-3 file:py-2 file:font-semibold file:text-red-600"
+                  multiple
+                  disabled={imageFiles.length >= MAX_PHOTOS}
+                  onChange={handlePhotosSelected}
+                  className="mt-4 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-red-50 file:px-3 file:py-2 file:font-semibold file:text-red-600 disabled:opacity-50"
                 />
 
               </div>
 
-              {imageFile && (
-                <div className="mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
-                  Selected: {imageFile.name}
+              {imageFiles.length > 0 && (
+                <>
+                  <div className="mt-3 flex items-center justify-between">
+                    <p className="text-xs font-semibold text-emerald-700">
+                      {imageFiles.length} photo
+                      {imageFiles.length === 1 ? "" : "s"} selected
+                    </p>
+
+                    <p className="text-xs text-zinc-400">
+                      {MAX_PHOTOS - imageFiles.length} remaining
+                    </p>
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-3 gap-2">
+                    {imageFiles.map((file, index) => (
+                      <div
+                        key={`${file.name}-${index}`}
+                        className="group relative aspect-square overflow-hidden rounded-xl border border-zinc-200"
+                      >
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Photo ${index + 1}`}
+                          className="h-full w-full object-cover"
+                        />
+
+                        {index === 0 && (
+                          <span className="absolute left-1 top-1 rounded-md bg-zinc-900/80 px-1.5 py-0.5 text-[10px] font-bold text-white">
+                            Cover
+                          </span>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => removePhoto(index)}
+                          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/60 text-xs font-bold text-white opacity-0 transition group-hover:opacity-100"
+                          aria-label={`Remove photo ${index + 1}`}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+            </section>
+
+
+            <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+
+              <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+                Optional
+              </p>
+
+              <h2 className="mt-1 text-lg font-black text-zinc-900">
+                Video tour
+              </h2>
+
+              <p className="mt-1 text-xs text-zinc-500">
+                A short walkthrough video helps buyers get a feel for the
+                property before scheduling a visit.
+              </p>
+
+              <input
+                type="file"
+                accept="video/*"
+                onChange={(e) =>
+                  setVideoFile(e.target.files?.[0] ?? null)
+                }
+                className="mt-4 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-red-50 file:px-3 file:py-2 file:font-semibold file:text-red-600"
+              />
+
+              {videoFile && (
+                <div className="mt-3 flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                  <span className="truncate">{videoFile.name}</span>
+
+                  <button
+                    type="button"
+                    onClick={() => setVideoFile(null)}
+                    className="ml-2 shrink-0 text-emerald-700/70 hover:text-emerald-900"
+                  >
+                    Remove
+                  </button>
                 </div>
               )}
 
@@ -509,7 +683,7 @@ export default function AddPropertyPage() {
                 className="mt-5 w-full rounded-2xl bg-red-600 px-5 py-3.5 font-bold text-white shadow-lg transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving
-                  ? "Publishing..."
+                  ? uploadProgress || "Publishing..."
                   : "Submit Property"}
               </button>
 

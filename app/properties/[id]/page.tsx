@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -30,6 +30,8 @@ export default function PropertyPage() {
   const [listerTypeLabel, setListerTypeLabel] = useState<string | null>(
     null
   );
+  const [gallery, setGallery] = useState<string[]>([]);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [message, setMessage] = useState(
     "Hi, I am interested in this property."
   );
@@ -57,6 +59,22 @@ export default function PropertyPage() {
             getAccountTypeLabel(sellerProfile?.account_type)
           );
         }
+
+        const { data: media } = await supabase
+          .from("property_media")
+          .select("url")
+          .eq("property_id", params.id)
+          .order("sort_order", { ascending: true });
+
+        if (media && media.length > 0) {
+          setGallery(media.map((m: any) => m.url));
+        } else if (data.image) {
+          // Older listing saved before the gallery existed -- fall back
+          // to its single cover photo instead of showing nothing.
+          setGallery([data.image]);
+        }
+
+        setActiveIndex(0);
       }
     }
 
@@ -115,7 +133,7 @@ export default function PropertyPage() {
       property.area ? `, ${property.area}` : ""
     }`,
     url: pageUrl,
-    image: property.image || undefined,
+    image: gallery.length > 0 ? gallery : property.image || undefined,
     address: {
       "@type": "PostalAddress",
       addressLocality: "Jaipur",
@@ -137,6 +155,11 @@ export default function PropertyPage() {
       availability: "https://schema.org/InStock",
     },
   };
+
+  const heroImage =
+    gallery[activeIndex] ||
+    property.image ||
+    "https://placehold.co/900x500?text=Property";
 
   return (
     <main className="min-h-screen bg-zinc-50">
@@ -173,13 +196,33 @@ export default function PropertyPage() {
       <div className="max-w-4xl mx-auto bg-white rounded-xl border overflow-hidden mt-6 mb-10 sm:mx-auto sm:mt-8 mx-4">
 
         <img
-          src={
-            property.image ||
-            "https://placehold.co/900x500?text=Property"
-          }
+          src={heroImage}
           alt={property.title}
           className="w-full h-80 object-cover"
         />
+
+        {gallery.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto border-t bg-zinc-50 p-3">
+            {gallery.map((url, index) => (
+              <button
+                key={`${url}-${index}`}
+                type="button"
+                onClick={() => setActiveIndex(index)}
+                className={`h-16 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition ${
+                  index === activeIndex
+                    ? "border-red-500"
+                    : "border-transparent opacity-70 hover:opacity-100"
+                }`}
+              >
+                <img
+                  src={url}
+                  alt={`${property.title} photo ${index + 1}`}
+                  className="h-full w-full object-cover"
+                />
+              </button>
+            ))}
+          </div>
+        )}
 
         <div className="p-6">
           <h1 className="text-3xl font-bold">
@@ -198,6 +241,12 @@ export default function PropertyPage() {
             {listerTypeLabel && (
               <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-600">
                 Listed by: {listerTypeLabel}
+              </span>
+            )}
+
+            {gallery.length > 1 && (
+              <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs font-semibold text-zinc-600">
+                {gallery.length} photos
               </span>
             )}
           </div>
@@ -229,6 +278,20 @@ export default function PropertyPage() {
               </Link>
             )}
           </div>
+
+          {property.video_url && (
+            <div className="mt-8 border-t pt-6">
+              <h2 className="text-2xl font-bold">
+                Video Tour
+              </h2>
+
+              <video
+                src={property.video_url}
+                controls
+                className="mt-4 w-full rounded-xl bg-black"
+              />
+            </div>
+          )}
 
           <div className="mt-8 border-t pt-6">
 
