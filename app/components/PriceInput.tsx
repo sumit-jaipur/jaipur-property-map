@@ -74,6 +74,16 @@ export default function PriceInput({
 }: Props) {
   const rupees = priceUnitToRupees(valueText, unit);
 
+  // inputClassName is the shared field style used everywhere else on this
+  // form, and it always bakes in "w-full" so a lone field fills its row.
+  // Here the number box and the unit dropdown share one row instead, so
+  // their own width classes below need to win -- Tailwind's compiled
+  // stylesheet order (not the order classes are written in JSX) decides
+  // which width class wins when two are both present, which is what was
+  // making the dropdown balloon to full width and squeeze the number box.
+  // Stripping the inherited w-full removes that conflict outright.
+  const fieldClassName = inputClassName.replace(/\bw-full\b/g, "").trim();
+
   return (
     <div>
       <label className={labelClassName}>Price *</label>
@@ -87,14 +97,14 @@ export default function PriceInput({
           value={valueText}
           onChange={(e) => onValueChange(e.target.value)}
           placeholder={unit === "crore" ? "Example: 1.5" : "Example: 70"}
-          className={`${inputClassName} flex-1`}
+          className={`${fieldClassName} min-w-0 flex-[2]`}
           required={required}
         />
 
         <select
           value={unit}
           onChange={(e) => onUnitChange(e.target.value as PriceUnit)}
-          className={`${inputClassName} w-28 shrink-0`}
+          className={`${fieldClassName} w-28 shrink-0`}
         >
           <option value="lakh">Lakh</option>
           <option value="crore">Crore</option>
