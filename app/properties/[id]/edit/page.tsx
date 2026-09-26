@@ -5,6 +5,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
 import LocationPicker from "../../../components/LocationPicker";
+import PriceInput, {
+  PriceUnit,
+  priceUnitToRupees,
+  rupeesToPriceUnit,
+} from "../../../components/PriceInput";
 
 const MAX_PHOTOS = 15;
 
@@ -35,7 +40,6 @@ export default function EditPropertyPage() {
   const [form, setForm] = useState({
     title: "",
     type: "Villa",
-    price: "",
     bhk: "",
     area: "",
     facing: "East",
@@ -45,6 +49,12 @@ export default function EditPropertyPage() {
     lng: "",
     status: "Available",
   });
+
+  // Price is entered/edited as a plain number plus a Lakh/Crore unit
+  // instead of the full rupee figure -- kept separate from `form` since
+  // it needs its own two-part change handler.
+  const [priceValue, setPriceValue] = useState("");
+  const [priceUnit, setPriceUnit] = useState<PriceUnit>("lakh");
 
   useEffect(() => {
     async function loadProperty() {
@@ -75,7 +85,6 @@ export default function EditPropertyPage() {
       setForm({
         title: data.title ?? "",
         type: data.type ?? "Villa",
-        price: String(data.price ?? ""),
         bhk: String(data.bhk ?? ""),
         area: data.area ?? "",
         facing: data.facing ?? "East",
@@ -85,6 +94,10 @@ export default function EditPropertyPage() {
         lng: String(data.lng ?? ""),
         status: data.status ?? "Available",
       });
+
+      const savedPrice = rupeesToPriceUnit(Number(data.price) || 0);
+      setPriceValue(savedPrice.valueText);
+      setPriceUnit(savedPrice.unit);
 
       setCurrentVideoUrl(data.video_url ?? null);
 
@@ -159,7 +172,7 @@ export default function EditPropertyPage() {
 
     if (
       !form.title.trim() ||
-      !form.price ||
+      !priceValue ||
       !form.lat ||
       !form.lng
     ) {
@@ -253,7 +266,7 @@ export default function EditPropertyPage() {
       .update({
         title: form.title.trim(),
         type: form.type,
-        price: Number(form.price),
+        price: priceUnitToRupees(priceValue, priceUnit),
         bhk: Number(form.bhk) || 0,
         area: form.area.trim(),
         facing: form.facing,
@@ -466,20 +479,15 @@ export default function EditPropertyPage() {
                   </div>
 
 
-                  <div>
-                    <label className={labelClass}>
-                      Price (INR)
-                    </label>
-
-                    <input
-                      name="price"
-                      type="number"
-                      value={form.price}
-                      onChange={handleChange}
-                      className={inputClass}
-                      required
-                    />
-                  </div>
+                  <PriceInput
+                    valueText={priceValue}
+                    unit={priceUnit}
+                    onValueChange={setPriceValue}
+                    onUnitChange={setPriceUnit}
+                    inputClassName={inputClass}
+                    labelClassName={labelClass}
+                    required
+                  />
 
                 </div>
 

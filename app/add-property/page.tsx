@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
 import LocationPicker from "../components/LocationPicker";
+import PriceInput, {
+  PriceUnit,
+  priceUnitToRupees,
+} from "../components/PriceInput";
 
 const MAX_PHOTOS = 15;
 
@@ -25,7 +29,6 @@ export default function AddPropertyPage() {
   const [form, setForm] = useState({
     title: "",
     type: "Villa",
-    price: "",
     bhk: "",
     area: "",
     facing: "East",
@@ -34,6 +37,12 @@ export default function AddPropertyPage() {
     lat: "",
     lng: "",
   });
+
+  // Price is entered as a plain number plus a Lakh/Crore unit ("70" +
+  // Lakh) instead of the full rupee figure with all its zeros -- kept
+  // separate from `form` since it needs its own two-part change handler.
+  const [priceValue, setPriceValue] = useState("");
+  const [priceUnit, setPriceUnit] = useState<PriceUnit>("lakh");
 
   useEffect(() => {
     async function checkAuth() {
@@ -96,7 +105,7 @@ export default function AddPropertyPage() {
 
     if (
       !form.title.trim() ||
-      !form.price ||
+      !priceValue ||
       !form.lat ||
       !form.lng
     ) {
@@ -183,7 +192,7 @@ export default function AddPropertyPage() {
         seller_id: user.id,
         title: form.title.trim(),
         type: form.type,
-        price: Number(form.price),
+        price: priceUnitToRupees(priceValue, priceUnit),
         bhk: Number(form.bhk) || 0,
         area: form.area.trim(),
         facing: form.facing,
@@ -367,22 +376,15 @@ export default function AddPropertyPage() {
                   </div>
 
 
-                  <div>
-                    <label className={labelClass}>
-                      Price (INR) *
-                    </label>
-
-                    <input
-                      name="price"
-                      type="number"
-                      min="0"
-                      value={form.price}
-                      onChange={handleChange}
-                      placeholder="Example: 8500000"
-                      className={inputClass}
-                      required
-                    />
-                  </div>
+                  <PriceInput
+                    valueText={priceValue}
+                    unit={priceUnit}
+                    onValueChange={setPriceValue}
+                    onUnitChange={setPriceUnit}
+                    inputClassName={inputClass}
+                    labelClassName={labelClass}
+                    required
+                  />
 
                 </div>
 
