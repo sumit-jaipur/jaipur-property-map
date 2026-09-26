@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "./lib/supabaseClient";
@@ -10,6 +10,7 @@ import {
   SavedSearchFilters,
   defaultSearchName,
 } from "./lib/savedSearch";
+import { LOCALITIES } from "./lib/localities";
 
 type Property = {
   id: number;
@@ -392,39 +393,39 @@ export default function Home() {
 
   // LOAD ACCOUNT AND FAVORITES
 
-  useEffect(() => {
-    async function loadAccount() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  const loadAccount = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      if (!user) {
-        setUserId(null);
-        setFavoriteIds([]);
-        return;
-      }
-
-      setUserId(user.id);
-
-      const { data } =
-        await supabase
-          .from("favorites")
-          .select("property_id")
-          .eq(
-            "user_id",
-            user.id
-          );
-
-      setFavoriteIds(
-        (data ?? []).map(
-          (item) =>
-            Number(
-              item.property_id
-            )
-        )
-      );
+    if (!user) {
+      setUserId(null);
+      setFavoriteIds([]);
+      return;
     }
 
+    setUserId(user.id);
+
+    const { data } =
+      await supabase
+        .from("favorites")
+        .select("property_id")
+        .eq(
+          "user_id",
+          user.id
+        );
+
+    setFavoriteIds(
+      (data ?? []).map(
+        (item) =>
+          Number(
+            item.property_id
+          )
+      )
+    );
+  }, []);
+
+  useEffect(() => {
     loadAccount();
 
     const { data } =
@@ -437,7 +438,42 @@ export default function Home() {
     return () => {
       data.subscription.unsubscribe();
     };
-  }, []);
+  }, [loadAccount]);
+
+  // Re-sync favorites whenever this page is shown again -- covers the
+  // browser restoring it from bfcache on a "Back" navigation (Chrome can
+  // repaint the exact old DOM/JS state instead of re-running our effects,
+  // which was leaving a property's Saved badge showing stale after you
+  // favorited/un-favorited it from a different page and came back), and
+  // covers switching back to this browser tab after favoriting something
+  // in another tab.
+  useEffect(() => {
+    function handlePageShow(event: PageTransitionEvent) {
+      if (event.persisted) {
+        loadAccount();
+      }
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        loadAccount();
+      }
+    }
+
+    window.addEventListener("pageshow", handlePageShow);
+    document.addEventListener(
+      "visibilitychange",
+      handleVisibilityChange
+    );
+
+    return () => {
+      window.removeEventListener("pageshow", handlePageShow);
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange
+      );
+    };
+  }, [loadAccount]);
 
 
   // FAVORITES
@@ -1623,6 +1659,31 @@ export default function Home() {
 
           </div>
 
+
+          {/* EXPLORE BY LOCALITY -- links to the per-area guide pages at
+              /locality/[slug]. These pages already existed (price bands,
+              a blurb, matching listings) but weren't linked from
+              anywhere in the app, so nobody could find them. */}
+
+          <div className="border-b border-zinc-200 bg-white px-4 py-3 lg:px-5">
+
+            <p className="text-xs font-bold uppercase tracking-wide text-zinc-400">
+              Explore by locality
+            </p>
+
+            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+              {LOCALITIES.map((locality) => (
+                <Link
+                  key={locality.slug}
+                  href={`/locality/${locality.slug}`}
+                  className="shrink-0 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-200"
+                >
+                  {locality.name}
+                </Link>
+              ))}
+            </div>
+
+          </div>
 
           <div className="grid gap-4 p-4 lg:p-5 xl:grid-cols-2">
 

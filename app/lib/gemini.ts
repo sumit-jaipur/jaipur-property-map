@@ -1564,7 +1564,10 @@ Give back:
    by hyphens, no special characters.
 3. "excerpt": a 1-2 sentence summary for a blog listing card.
 4. "content": the full article body as described above.
-5. "seoTitle": a search-engine title tag, under 60 characters.
+5. "seoTitle": a search-engine title tag, under 60 characters. The site
+   already appends " | 99Bricks" to every page title automatically, so do
+   NOT include "99Bricks" or any site name in this field yourself -- just
+   the article's own title tag, or it will show up twice.
 6. "seoDescription": a search-engine meta description, under 160
    characters, written to make a search result worth clicking.`;
 

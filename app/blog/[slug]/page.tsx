@@ -19,6 +19,17 @@ type BlogPost = {
   published_at: string | null;
 };
 
+// The root layout already appends " | 99Bricks" to every page title via
+// its title.template. Some earlier AI-drafted posts stored a seo_title
+// that already had "| 99Bricks" baked in (the article-drafting prompt
+// didn't warn against it at the time), which doubled up to
+// "... | 99Bricks | 99Bricks" in the browser tab. Strip a trailing site
+// name here so it self-heals for any post already saved with one,
+// regardless of how it got there.
+function stripSiteNameSuffix(title: string): string {
+  return title.replace(/\s*[|\-–—]\s*99\s*Bricks\s*$/i, "").trim();
+}
+
 async function getPublishedPost(slug: string): Promise<BlogPost | null> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
@@ -51,7 +62,7 @@ export async function generateMetadata({
     return { title: "Article not found" };
   }
 
-  const title = post.seo_title || post.title;
+  const title = stripSiteNameSuffix(post.seo_title || post.title);
   const description = post.seo_description || post.excerpt || undefined;
 
   return {
