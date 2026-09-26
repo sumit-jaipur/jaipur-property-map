@@ -35,28 +35,21 @@ type SearchLocation = {
   lng: number;
 };
 
+// Search Box API's /suggest step doesn't return coordinates (that's what
+// /retrieve is for) -- a suggestion is just enough to show in the dropdown
+// and to look up afterward.
 type LocationSuggestion = {
-  id: string;
+  id: string; // mapbox_id, passed to /retrieve once picked
   label: string;
-  lat: number;
-  lng: number;
   featureType: string;
 };
 
-type MapboxFeature = {
-  id?: string;
-
-  geometry?: {
-    coordinates?: number[];
-  };
-
-  properties?: {
-    mapbox_id?: string;
-    name?: string;
-    full_address?: string;
-    place_formatted?: string;
-    feature_type?: string;
-  };
+type MapboxSuggestion = {
+  mapbox_id?: string;
+  name?: string;
+  full_address?: string;
+  place_formatted?: string;
+  feature_type?: string;
 };
 
 const MAPBOX_TOKEN =
@@ -148,6 +141,12 @@ function locationPriority(
 
   if (type === "address") {
     return 5;
+  }
+
+  // Landmarks/businesses -- previously unreachable at all (see below),
+  // now findable but still ranked behind a formal address/place match.
+  if (type === "poi") {
+    return 6;
   }
 
   return 10;
@@ -298,6 +297,12 @@ export default function Home() {
   const dragStartY = useRef<number | null>(null);
 
   const sheetRef = useRef<HTMLElement | null>(null);
+
+  // Search Box API bills per "session" (one round of typing through to a
+  // pick), not per keystroke -- this holds that session's id. Cleared
+  // once a location is resolved (or a one-shot search completes) so the
+  // next search starts a fresh session.
+  const locationSessionToken = useRef<string | null>(null);
 
   function handleSheetDragStart(
     e: React.TouchEvent
@@ -562,6 +567,14 @@ export default function Home() {
 
 
   // LOCATION AUTOCOMPLETE
+  //
+  // Was calling the plain Geocoding API restricted to
+  // neighborhood/locality/place/street/address -- which meant a landmark,
+  // shop, or informal place name someone actually typed ("near Apex
+  // Mall", a temple, a colony gate) matched nothing and the map never
+  // moved. Mapbox's Search Box API is the fix: it's built for exactly
+  // this (addresses AND points of interest AND informal names), with
+  // real fuzzy/partial matching baked into /suggest.
 
   useEffect(() => {
     const text =
@@ -576,6 +589,11 @@ export default function Home() {
       return;
     }
 
+    if (!locationSessionToken.current) {
+      locationSessionToken.current =
+        crypto.randomUUID();
+    }
+
     const controller =
       new AbortController();
 
@@ -583,17 +601,16 @@ export default function Home() {
       async () => {
         try {
           const url =
-            "https://api.mapbox.com/search/geocode/v6/forward" +
+            "https://api.mapbox.com/search/searchbox/v1/suggest" +
             `?q=${encodeURIComponent(
               text
             )}` +
+            `&session_token=${locationSessionToken.current}` +
             "&country=IN" +
             "&bbox=75.65,26.75,76.05,27.10" +
             "&proximity=75.7873,26.9124" +
-            "&types=neighborhood,locality,place,street,address" +
-            "&limit=10" +
-            "&autocomplete=true" +
             "&language=en" +
+            "&limit=8" +
             `&access_token=${MAPBOX_TOKEN}`;
 
           const response =
@@ -609,43 +626,30 @@ export default function Home() {
           const data =
             await response.json();
 
-          const features:
-            MapboxFeature[] =
-            data.features ?? [];
+          const rawSuggestions:
+            MapboxSuggestion[] =
+            data.suggestions ?? [];
 
           const typed =
             text.toLowerCase();
 
           const results =
-            features
+            rawSuggestions
               .map(
                 (
-                  feature
+                  item
                 ):
                   | LocationSuggestion
                   | null => {
-                  const coordinates =
-                    feature
-                      .geometry
-                      ?.coordinates;
-
-                  if (
-                    !coordinates ||
-                    coordinates.length <
-                      2
-                  ) {
+                  if (!item.mapbox_id) {
                     return null;
                   }
 
-                  const info =
-                    feature.properties ??
-                    {};
-
                   const label =
-                    info.full_address ||
+                    item.full_address ||
                     [
-                      info.name,
-                      info.place_formatted,
+                      item.name,
+                      item.place_formatted,
                     ]
                       .filter(Boolean)
                       .join(", ");
@@ -655,21 +659,12 @@ export default function Home() {
                   }
 
                   return {
-                    id:
-                      info.mapbox_id ||
-                      feature.id ||
-                      `${coordinates[1]}-${coordinates[0]}`,
+                    id: item.mapbox_id,
 
                     label,
 
-                    lat:
-                      coordinates[1],
-
-                    lng:
-                      coordinates[0],
-
                     featureType:
-                      info.feature_type ||
+                      item.feature_type ||
                       "",
                   };
                 }
@@ -752,21 +747,67 @@ export default function Home() {
     };
   }, [searchText]);
 
+  // A suggestion from /suggest doesn't carry coordinates -- this resolves
+  // one via /retrieve using the same session token the suggestions were
+  // fetched with (required for Search Box's session-based billing to
+  // count correctly as "one search," not one charge per keystroke).
+  async function resolveSuggestionCoordinates(
+    suggestionId: string
+  ): Promise<{ lat: number; lng: number } | null> {
+    if (!MAPBOX_TOKEN || !locationSessionToken.current) {
+      return null;
+    }
 
-  function selectSuggestion(
+    try {
+      const url =
+        `https://api.mapbox.com/search/searchbox/v1/retrieve/${encodeURIComponent(
+          suggestionId
+        )}` +
+        `?session_token=${locationSessionToken.current}` +
+        `&access_token=${MAPBOX_TOKEN}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+      const coordinates = data.features?.[0]?.geometry?.coordinates;
+
+      if (!coordinates || coordinates.length < 2) {
+        return null;
+      }
+
+      return { lat: coordinates[1], lng: coordinates[0] };
+    } catch {
+      return null;
+    } finally {
+      // The session is over once a place has been picked -- the next
+      // search (even from the same dropdown) starts a fresh one.
+      locationSessionToken.current = null;
+    }
+  }
+
+
+  async function selectSuggestion(
     suggestion: LocationSuggestion
   ) {
     setSearchText(
       suggestion.label
     );
 
-    setSearchLocation({
-      lat: suggestion.lat,
-      lng: suggestion.lng,
-    });
-
     setSuggestions([]);
     setSearchError("");
+
+    const resolved =
+      await resolveSuggestionCoordinates(
+        suggestion.id
+      );
+
+    if (!resolved) {
+      setSearchError(
+        "Couldn't pin that location. Please try again."
+      );
+      return;
+    }
+
+    setSearchLocation(resolved);
   }
 
 
@@ -828,44 +869,80 @@ export default function Home() {
 
     setSearching(true);
     setSearchError("");
-    setSuggestions([]);
 
     try {
-      const url =
-        "https://api.mapbox.com/search/geocode/v6/forward" +
-        `?q=${encodeURIComponent(
-          `${text}, Jaipur`
-        )}` +
-        "&country=IN" +
-        "&bbox=75.65,26.75,76.05,27.10" +
-        "&proximity=75.7873,26.9124" +
-        "&limit=1" +
-        "&autocomplete=false" +
-        "&language=en" +
-        `&access_token=${MAPBOX_TOKEN}`;
+      // The common case: a suggestion is already showing because the
+      // user typed and hit Enter instead of clicking it -- just resolve
+      // that top result instead of firing a second search.
+      let top: LocationSuggestion | undefined =
+        suggestions[0];
 
-      const response =
-        await fetch(url);
+      if (!top) {
+        if (!locationSessionToken.current) {
+          locationSessionToken.current =
+            crypto.randomUUID();
+        }
 
-      const data =
-        await response.json();
+        const suggestUrl =
+          "https://api.mapbox.com/search/searchbox/v1/suggest" +
+          `?q=${encodeURIComponent(
+            `${text}, Jaipur`
+          )}` +
+          `&session_token=${locationSessionToken.current}` +
+          "&country=IN" +
+          "&bbox=75.65,26.75,76.05,27.10" +
+          "&proximity=75.7873,26.9124" +
+          "&language=en" +
+          "&limit=1" +
+          `&access_token=${MAPBOX_TOKEN}`;
 
-      const coordinates =
-        data.features?.[0]
-          ?.geometry
-          ?.coordinates;
+        const suggestResponse =
+          await fetch(suggestUrl);
 
-      if (!coordinates) {
+        const suggestData =
+          await suggestResponse.json();
+
+        const first:
+          MapboxSuggestion | undefined =
+          suggestData.suggestions?.[0];
+
+        if (!first?.mapbox_id) {
+          setSearchError(
+            "Location not found in Jaipur."
+          );
+          return;
+        }
+
+        top = {
+          id: first.mapbox_id,
+          label:
+            first.full_address ||
+            [
+              first.name,
+              first.place_formatted,
+            ]
+              .filter(Boolean)
+              .join(", "),
+          featureType:
+            first.feature_type || "",
+        };
+      }
+
+      const resolved =
+        await resolveSuggestionCoordinates(
+          top.id
+        );
+
+      if (!resolved) {
         setSearchError(
           "Location not found in Jaipur."
         );
         return;
       }
 
-      setSearchLocation({
-        lat: coordinates[1],
-        lng: coordinates[0],
-      });
+      setSearchText(top.label);
+      setSuggestions([]);
+      setSearchLocation(resolved);
     } catch {
       setSearchError(
         "Unable to search location."

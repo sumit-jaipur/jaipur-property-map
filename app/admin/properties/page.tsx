@@ -4,6 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
+import { getAccountTypeLabel } from "../../lib/accountTypes";
+
+const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
 type Property = {
   id: number;
@@ -15,6 +18,31 @@ type Property = {
   status: string;
   verification_status: "pending" | "approved" | "rejected";
   is_featured: boolean;
+};
+
+// Everything beyond the summary card -- fetched only once an admin
+// actually opens a listing to review it, not for every row up front.
+type PropertyDetail = {
+  bhk: number | null;
+  facing: string | null;
+  parking: string | null;
+  road: string | null;
+  lat: number | null;
+  lng: number | null;
+  status: string | null;
+  video_url: string | null;
+};
+
+type ListerInfo = {
+  phone: string | null;
+  email: string | null;
+  accountType: string | null;
+};
+
+type PropertyReview = {
+  detail: PropertyDetail;
+  gallery: string[];
+  lister: ListerInfo | null;
 };
 
 function formatPrice(price: number) {
@@ -31,6 +59,14 @@ function formatPrice(price: number) {
   return rupee + price.toLocaleString("en-IN");
 }
 
+// Phone numbers are saved as whatever the seller typed at signup --
+// usually a plain 10-digit Indian mobile number with no country code,
+// which a wa.me link needs to actually open a chat.
+function toWhatsAppNumber(phone: string) {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length === 10 ? `91${digits}` : digits;
+}
+
 export default function AdminPropertiesPage() {
   const router = useRouter();
 
@@ -39,6 +75,22 @@ export default function AdminPropertiesPage() {
   const [accessDenied, setAccessDenied] = useState(false);
   const [updatingId, setUpdatingId] = useState<number | null>(null);
   const [error, setError] = useState("");
+
+  // This used to be a plain link out to the public /properties/[id]
+  // page -- but that page is built for a buyer to send an inquiry, not
+  // for verifying a listing before approving it. Reviewing a pending
+  // property now expands right here instead, with the seller's contact
+  // info front and center so it can actually be called and checked.
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [reviewCache, setReviewCache] = useState<
+    Record<number, PropertyReview>
+  >({});
+  const [reviewLoadingId, setReviewLoadingId] = useState<number | null>(
+    null
+  );
+  const [reviewErrors, setReviewErrors] = useState<Record<number, string>>(
+    {}
+  );
 
   useEffect(() => {
     async function loadPage() {
@@ -178,6 +230,82 @@ export default function AdminPropertiesPage() {
           : property
       )
     );
+  }
+
+  async function toggleReview(propertyId: number) {
+    if (expandedId === propertyId) {
+      setExpandedId(null);
+      return;
+    }
+
+    setExpandedId(propertyId);
+
+    if (reviewCache[propertyId]) {
+      return;
+    }
+
+    setReviewLoadingId(propertyId);
+    setReviewErrors((current) => ({ ...current, [propertyId]: "" }));
+
+    try {
+      const { data: fullProperty, error: propertyError } = await supabase
+        .from("properties")
+        .select("bhk, facing, parking, road, lat, lng, status, video_url")
+        .eq("id", propertyId)
+        .single();
+
+      if (propertyError || !fullProperty) {
+        throw new Error(
+          propertyError?.message || "Could not load property details."
+        );
+      }
+
+      const { data: mediaRows } = await supabase
+        .from("property_media")
+        .select("url")
+        .eq("property_id", propertyId)
+        .order("sort_order", { ascending: true });
+
+      let lister: ListerInfo | null = null;
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (session) {
+        const response = await fetch(
+          `/api/admin/properties/${propertyId}/lister`,
+          {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          lister = await response.json();
+        }
+      }
+
+      setReviewCache((current) => ({
+        ...current,
+        [propertyId]: {
+          detail: fullProperty as PropertyDetail,
+          gallery: (mediaRows || []).map((row) => row.url as string),
+          lister,
+        },
+      }));
+    } catch (err) {
+      setReviewErrors((current) => ({
+        ...current,
+        [propertyId]:
+          err instanceof Error
+            ? err.message
+            : "Could not load property details.",
+      }));
+    } finally {
+      setReviewLoadingId(null);
+    }
   }
 
   if (loading) {
@@ -348,7 +476,11 @@ export default function AdminPropertiesPage() {
 
         <div className="space-y-4">
 
-          {properties.map((property) => (
+          {properties.map((property) => {
+            const isExpanded = expandedId === property.id;
+            const review = reviewCache[property.id];
+
+            return (
             <article
               key={property.id}
               className="overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm"
@@ -416,12 +548,15 @@ export default function AdminPropertiesPage() {
 
                   <div className="mt-5 flex flex-wrap gap-2">
 
-                    <Link
-                      href={`/properties/${property.id}`}
+                    <button
+                      type="button"
+                      onClick={() => toggleReview(property.id)}
                       className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-700 transition hover:bg-zinc-50"
                     >
-                      View Property
-                    </Link>
+                      {expandedId === property.id
+                        ? "Hide Details"
+                        : "Review Details"}
+                    </button>
 
 
                     <button
@@ -469,12 +604,195 @@ export default function AdminPropertiesPage() {
 
                   </div>
 
+
+                  {isExpanded && (
+                    <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
+
+                      {reviewLoadingId === property.id && (
+                        <p className="text-sm font-semibold text-zinc-500">
+                          Loading listing details...
+                        </p>
+                      )}
+
+                      {reviewErrors[property.id] && (
+                        <p className="text-sm font-semibold text-red-600">
+                          {reviewErrors[property.id]}
+                        </p>
+                      )}
+
+                      {review && (
+                        <div className="grid gap-5 md:grid-cols-[1.2fr_1fr]">
+
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-zinc-400">
+                              Property details
+                            </p>
+
+                            <dl className="mt-2 grid grid-cols-2 gap-x-4 gap-y-3 text-sm sm:grid-cols-3">
+                              <div>
+                                <dt className="text-zinc-400">BHK</dt>
+                                <dd className="font-semibold text-zinc-800">
+                                  {review.detail.bhk || "-"}
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="text-zinc-400">Facing</dt>
+                                <dd className="font-semibold text-zinc-800">
+                                  {review.detail.facing || "-"}
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="text-zinc-400">Parking</dt>
+                                <dd className="font-semibold text-zinc-800">
+                                  {review.detail.parking || "-"}
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="text-zinc-400">Road width</dt>
+                                <dd className="font-semibold text-zinc-800">
+                                  {review.detail.road || "-"}
+                                </dd>
+                              </div>
+
+                              <div>
+                                <dt className="text-zinc-400">
+                                  Listing status
+                                </dt>
+                                <dd className="font-semibold text-zinc-800">
+                                  {review.detail.status || "-"}
+                                </dd>
+                              </div>
+
+                              {review.detail.video_url && (
+                                <div>
+                                  <dt className="text-zinc-400">
+                                    Video tour
+                                  </dt>
+                                  <dd>
+                                    <a
+                                      href={review.detail.video_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="font-semibold text-red-600 hover:underline"
+                                    >
+                                      Watch
+                                    </a>
+                                  </dd>
+                                </div>
+                              )}
+                            </dl>
+
+                            {review.gallery.length > 0 && (
+                              <div className="mt-4 flex gap-2 overflow-x-auto">
+                                {review.gallery.map((url, index) => (
+                                  <img
+                                    key={`${url}-${index}`}
+                                    src={url}
+                                    alt={`${property.title} photo ${
+                                      index + 1
+                                    }`}
+                                    className="h-20 w-28 flex-shrink-0 rounded-lg object-cover"
+                                  />
+                                ))}
+                              </div>
+                            )}
+
+                            {review.detail.lat &&
+                              review.detail.lng &&
+                              MAPBOX_TOKEN && (
+                                <a
+                                  href={`https://www.google.com/maps?q=${review.detail.lat},${review.detail.lng}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-4 block overflow-hidden rounded-xl border border-zinc-200"
+                                >
+                                  <img
+                                    src={`https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/pin-s+dc2626(${review.detail.lng},${review.detail.lat})/${review.detail.lng},${review.detail.lat},15,0,55/500x220@2x?access_token=${MAPBOX_TOKEN}`}
+                                    alt="Property location"
+                                    className="h-40 w-full object-cover"
+                                  />
+                                  <p className="bg-white px-3 py-2 text-xs font-semibold text-zinc-500">
+                                    {review.detail.lat.toFixed(5)},{" "}
+                                    {review.detail.lng.toFixed(5)} -- open
+                                    in Google Maps
+                                  </p>
+                                </a>
+                              )}
+                          </div>
+
+                          <div>
+                            <p className="text-xs font-bold uppercase tracking-wide text-zinc-400">
+                              Contact the lister
+                            </p>
+
+                            {review.lister ? (
+                              <div className="mt-2 space-y-2 rounded-xl border border-zinc-200 bg-white p-4">
+
+                                {review.lister.accountType && (
+                                  <span className="inline-block w-fit rounded-full bg-accent-soft px-2.5 py-1 text-xs font-bold text-accent">
+                                    {getAccountTypeLabel(
+                                      review.lister.accountType
+                                    )}
+                                  </span>
+                                )}
+
+                                {review.lister.phone ? (
+                                  <div className="flex flex-wrap gap-2 pt-1">
+                                    <a
+                                      href={`tel:${review.lister.phone}`}
+                                      className="rounded-lg bg-zinc-900 px-3 py-2 text-sm font-bold text-white hover:opacity-90"
+                                    >
+                                      Call {review.lister.phone}
+                                    </a>
+
+                                    <a
+                                      href={`https://wa.me/${toWhatsAppNumber(
+                                        review.lister.phone
+                                      )}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="rounded-lg bg-[#25D366] px-3 py-2 text-sm font-bold text-white hover:opacity-90"
+                                    >
+                                      WhatsApp
+                                    </a>
+                                  </div>
+                                ) : (
+                                  <p className="pt-1 text-sm text-zinc-400">
+                                    No phone number on file for this
+                                    account.
+                                  </p>
+                                )}
+
+                                {review.lister.email && (
+                                  <p className="pt-1 text-sm text-zinc-600">
+                                    {review.lister.email}
+                                  </p>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="mt-2 text-sm text-zinc-400">
+                                Could not load contact info for this
+                                listing's seller.
+                              </p>
+                            )}
+                          </div>
+
+                        </div>
+                      )}
+
+                    </div>
+                  )}
+
                 </div>
 
               </div>
 
             </article>
-          ))}
+            );
+          })}
 
         </div>
 

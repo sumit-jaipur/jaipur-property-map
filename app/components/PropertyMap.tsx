@@ -2,7 +2,13 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import MapGL, { Marker, Popup, MapRef } from "react-map-gl/mapbox";
+import MapGL, {
+  Marker,
+  Popup,
+  MapRef,
+  Layer,
+  NavigationControl,
+} from "react-map-gl/mapbox";
 import Supercluster, { PointFeature } from "supercluster";
 import "mapbox-gl/dist/mapbox-gl.css";
 
@@ -55,6 +61,11 @@ export default function PropertyMap({
 
   // Zoom closer when user searches for a location
   const mapZoom = searchLocation ? 14 : 11;
+
+  // Tilt into 3D once someone has actually searched a specific spot --
+  // that's exactly when "what's really around here" matters. Keep the
+  // default citywide browse view flat and easy to scan.
+  const mapPitch = searchLocation ? 50 : 0;
 
   const [viewport, setViewport] = useState<{
     bounds: [number, number, number, number];
@@ -153,7 +164,9 @@ export default function PropertyMap({
         longitude: mapLongitude,
         latitude: mapLatitude,
         zoom: mapZoom,
+        pitch: mapPitch,
       }}
+      maxPitch={70}
       style={{
         width: "100%",
         height: "100%",
@@ -163,6 +176,27 @@ export default function PropertyMap({
       onLoad={updateViewport}
       onMove={updateViewport}
     >
+      <NavigationControl position="top-right" visualizePitch />
+
+      {/* Extrudes real building footprints to their actual height once
+          zoomed in on a searched location, so the 3D tilt above reads as
+          an actual skyline instead of just a tilted flat map. Uses
+          building data already in the streets-v12 style -- no extra
+          data source or cost. */}
+      <Layer
+        id="3d-buildings"
+        source="composite"
+        source-layer="building"
+        type="fill-extrusion"
+        minzoom={14}
+        paint={{
+          "fill-extrusion-color": "#d4d4d8",
+          "fill-extrusion-height": ["get", "height"],
+          "fill-extrusion-base": ["get", "min_height"],
+          "fill-extrusion-opacity": 0.8,
+        }}
+      />
+
       {/* PROPERTY MARKERS, CLUSTERED WHEN CLOSE TOGETHER */}
 
       {clusters.map((feature) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Map, { Marker } from "react-map-gl/mapbox";
+import Map, { Marker, Layer, NavigationControl } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -17,10 +17,19 @@ type Props = {
   onChange: (lat: string, lng: string) => void;
 };
 
+// Search Box API's /suggest step returns a name/id, not coordinates --
+// /retrieve is a second call that resolves those once something is
+// actually picked (see selectSuggestion below).
 type Suggestion = {
-  id: string;
+  id: string; // mapbox_id, passed to /retrieve once picked
   place_name: string;
-  center: [number, number]; // [lng, lat]
+};
+
+type MapboxSuggestion = {
+  mapbox_id?: string;
+  name?: string;
+  full_address?: string;
+  place_formatted?: string;
 };
 
 export default function LocationPicker({ lat, lng, onChange }: Props) {
@@ -34,6 +43,11 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [searching, setSearching] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  // Search Box API bills per search "session" (typing through to a pick),
+  // not per keystroke -- this holds that session's id, reset once a
+  // location is resolved so the next search starts a fresh one.
+  const sessionTokenRef = useRef<string | null>(null);
 
   const hasPin = lat !== "" && lng !== "";
 
@@ -53,14 +67,22 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
     setIsIOS(iOSDevice);
   }, []);
 
-  // Debounced address search via Mapbox's geocoding API -- the same
-  // token already used for the map itself, no new setup needed.
+  // Debounced address search via Mapbox's Search Box API -- the same
+  // token already used for the map itself, no new setup needed. This
+  // replaced the older Geocoding API, which only matched formal
+  // addresses/streets/neighborhoods -- a landmark, shop, or informal
+  // place name (which is often all a seller actually knows) matched
+  // nothing and the map never moved to the right area.
   useEffect(() => {
     const query = searchQuery.trim();
 
     if (query.length < 3) {
       setSuggestions([]);
       return;
+    }
+
+    if (!sessionTokenRef.current) {
+      sessionTokenRef.current = crypto.randomUUID();
     }
 
     const controller = new AbortController();
@@ -70,14 +92,32 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
 
       try {
         const res = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-            query
-          )}.json?access_token=${MAPBOX_TOKEN}&country=IN&proximity=${JAIPUR_LNG},${JAIPUR_LAT}&limit=5`,
+          "https://api.mapbox.com/search/searchbox/v1/suggest" +
+            `?q=${encodeURIComponent(query)}` +
+            `&session_token=${sessionTokenRef.current}` +
+            `&access_token=${MAPBOX_TOKEN}` +
+            "&country=IN" +
+            `&proximity=${JAIPUR_LNG},${JAIPUR_LAT}` +
+            "&language=en" +
+            "&limit=6",
           { signal: controller.signal }
         );
 
         const data = await res.json();
-        setSuggestions(data.features || []);
+        const rawSuggestions: MapboxSuggestion[] = data.suggestions || [];
+
+        const parsed: Suggestion[] = rawSuggestions
+          .filter((item) => item.mapbox_id)
+          .map((item) => ({
+            id: item.mapbox_id as string,
+            place_name:
+              item.full_address ||
+              [item.name, item.place_formatted]
+                .filter(Boolean)
+                .join(", "),
+          }));
+
+        setSuggestions(parsed);
       } catch {
         // A cancelled/failed search just means no suggestions yet --
         // nothing to show the user.
@@ -100,14 +140,34 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
     });
   }
 
-  function selectSuggestion(feature: Suggestion) {
-    const [lngVal, latVal] = feature.center;
-
-    onChange(latVal.toFixed(6), lngVal.toFixed(6));
-    setSearchQuery(feature.place_name);
+  async function selectSuggestion(suggestion: Suggestion) {
+    setSearchQuery(suggestion.place_name);
     setSuggestions([]);
     setShowSuggestions(false);
-    flyTo(latVal, lngVal);
+
+    if (!sessionTokenRef.current) return;
+
+    try {
+      const res = await fetch(
+        `https://api.mapbox.com/search/searchbox/v1/retrieve/${encodeURIComponent(
+          suggestion.id
+        )}?session_token=${sessionTokenRef.current}&access_token=${MAPBOX_TOKEN}`
+      );
+
+      const data = await res.json();
+      const coordinates = data.features?.[0]?.geometry?.coordinates;
+
+      if (!coordinates || coordinates.length < 2) return;
+
+      const [lngVal, latVal] = coordinates;
+
+      onChange(latVal.toFixed(6), lngVal.toFixed(6));
+      flyTo(latVal, lngVal);
+    } finally {
+      // The session ends once a place is picked -- the next search
+      // starts fresh.
+      sessionTokenRef.current = null;
+    }
   }
 
   const handleMapClick = useCallback(
@@ -234,12 +294,41 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
             longitude: centerLng,
             latitude: centerLat,
             zoom: hasPin ? 14 : 11,
+            // A real photographic street view isn't something Mapbox
+            // offers -- this is the free alternative: tilt the existing
+            // map into a 3D perspective (with the buildings layer below)
+            // so you can see what's actually around the pin instead of
+            // a flat top-down view. Drag with two fingers (or right-click
+            // drag on desktop), or use the tilt control at top-right.
+            pitch: 55,
+            bearing: -12,
           }}
+          maxPitch={70}
           style={{ width: "100%", height: 280 }}
           mapStyle="mapbox://styles/mapbox/streets-v12"
           onClick={handleMapClick}
           cursor="crosshair"
         >
+          <NavigationControl position="top-right" visualizePitch />
+
+          {/* Extrudes real building footprints to their actual height so
+              the tilted view reads as a skyline, not just a tilted flat
+              map. Uses the building data already included in the
+              streets-v12 style -- no extra data source or cost. */}
+          <Layer
+            id="3d-buildings"
+            source="composite"
+            source-layer="building"
+            type="fill-extrusion"
+            minzoom={14}
+            paint={{
+              "fill-extrusion-color": "#d4d4d8",
+              "fill-extrusion-height": ["get", "height"],
+              "fill-extrusion-base": ["get", "min_height"],
+              "fill-extrusion-opacity": 0.8,
+            }}
+          />
+
           {hasPin && (
             <Marker
               longitude={Number(lng)}
