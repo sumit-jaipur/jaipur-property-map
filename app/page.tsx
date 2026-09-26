@@ -1221,28 +1221,26 @@ export default function Home() {
                 onClick={handleNearMe}
                 disabled={locatingMe}
                 title="Use my current location"
-                className="mr-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-header-fg/70 transition hover:bg-white/15 hover:text-header-fg disabled:opacity-50"
+                className="mr-1 flex h-9 shrink-0 items-center gap-1.5 rounded-xl border border-white/30 bg-white/15 px-2.5 text-header-fg transition hover:border-white/50 hover:bg-white/25 disabled:opacity-50 sm:px-3"
               >
-                {locatingMe ? (
-                  <span className="text-[10px] font-bold">
-                    ...
-                  </span>
-                ) : (
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    className="h-4.5 w-4.5"
-                    aria-hidden="true"
-                  >
-                    <circle cx="12" cy="12" r="3" />
-                    <path
-                      d="M12 2v3M12 19v3M2 12h3M19 12h3"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                )}
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-5 w-5 shrink-0 text-accent"
+                  aria-hidden="true"
+                >
+                  <circle cx="12" cy="12" r="3" />
+                  <path
+                    d="M12 2v3M12 19v3M2 12h3M19 12h3"
+                    strokeLinecap="round"
+                  />
+                </svg>
+
+                <span className="hidden text-xs font-semibold sm:inline">
+                  {locatingMe ? "Locating..." : "Near Me"}
+                </span>
               </button>
 
               <button
