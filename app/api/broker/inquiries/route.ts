@@ -64,9 +64,15 @@ export async function GET(request: NextRequest) {
   const emailById = new Map<string, string>();
 
   if (buyerIds.length > 0) {
-    const { data: userList } = await supabaseAdmin.auth.admin.listUsers({
-      perPage: 1000,
-    });
+    const { data: userList, error: userListError } =
+      await supabaseAdmin.auth.admin.listUsers({ perPage: 1000 });
+
+    if (userListError) {
+      return NextResponse.json(
+        { error: "Failed to load buyer emails: " + userListError.message },
+        { status: 500 }
+      );
+    }
 
     for (const u of userList?.users || []) {
       if (u.email) emailById.set(u.id, u.email);

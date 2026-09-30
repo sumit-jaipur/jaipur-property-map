@@ -186,10 +186,23 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await supabaseAdmin
+  const { error: queueUpdateError } = await supabaseAdmin
     .from("build_queue")
     .update({ status: "in_progress", updated_at: new Date().toISOString() })
     .eq("id", queueItem.id);
+
+  if (queueUpdateError) {
+    return NextResponse.json(
+      {
+        error:
+          "The draft was saved (post #" +
+          inserted.id +
+          "), but updating build_queue failed: " +
+          queueUpdateError.message,
+      },
+      { status: 500 }
+    );
+  }
 
   return NextResponse.json({
     success: true,
