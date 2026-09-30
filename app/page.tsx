@@ -1954,16 +1954,31 @@ export default function Home() {
                         favoriteLoading ===
                         property.id
                       }
-                      className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-sm font-black shadow-lg backdrop-blur transition hover:scale-110 disabled:opacity-50"
+                      className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-black/25 shadow-lg backdrop-blur-sm transition hover:scale-110 hover:bg-black/35 disabled:opacity-60"
                       title={
                         isFavorite
                           ? "Remove favorite"
                           : "Add favorite"
                       }
+                      aria-label={
+                        isFavorite
+                          ? "Remove favorite"
+                          : "Add favorite"
+                      }
                     >
-                      {isFavorite
-                        ? "Saved"
-                        : "Save"}
+                      <svg
+                        viewBox="0 0 24 24"
+                        className={`h-[18px] w-[18px] transition-transform ${
+                          isFavorite ? "scale-110" : ""
+                        }`}
+                        fill={isFavorite ? "#ef4444" : "none"}
+                        stroke={isFavorite ? "#ef4444" : "white"}
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 21s-6.7-4.35-9.33-8.2C.86 10.1 1.2 6.6 4 4.8c2.3-1.47 5-1 7 1.2 2-2.2 4.7-2.67 7-1.2 2.8 1.8 3.14 5.3 1.33 7.99C18.7 16.65 12 21 12 21z" />
+                      </svg>
                     </button>
 
 
