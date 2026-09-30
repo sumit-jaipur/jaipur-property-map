@@ -37,6 +37,25 @@ export default function PropertyPage() {
     "Hi, I am interested in this property."
   );
   const [status, setStatus] = useState("");
+  const [sendingMessage, setSendingMessage] = useState(false);
+
+  // Who's looking at this page right now, and their saved phone number
+  // (collected at signup for every account type) -- loaded once so the
+  // Contact section can show the right state immediately instead of only
+  // discovering "you're not signed in" after a click, and so a returning
+  // buyer never has to re-type a phone number that's already on file.
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authUser, setAuthUser] = useState<any>(null);
+  const [profilePhone, setProfilePhone] = useState("");
+  const [phoneInput, setPhoneInput] = useState("");
+
+  // The "Free Consultancy + Free Site Visit" request -- a separate,
+  // higher-intent path from a plain message. It reuses the existing
+  // inquiries.status pipeline value "site_visit_scheduled" instead of
+  // needing a new column, so it shows up in the admin sales pipeline
+  // ready to assign to a broker immediately.
+  const [visitStatus, setVisitStatus] = useState("");
+  const [sendingVisit, setSendingVisit] = useState(false);
 
   useEffect(() => {
     async function loadProperty() {
@@ -82,32 +101,88 @@ export default function PropertyPage() {
     loadProperty();
   }, [params.id]);
 
-  async function sendInquiry() {
-    setStatus("");
+  useEffect(() => {
+    async function loadAuth() {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+      setAuthUser(user);
 
-    if (!user) {
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("phone")
+          .eq("id", user.id)
+          .single();
+
+        setProfilePhone(profile?.phone || "");
+      }
+
+      setAuthChecked(true);
+    }
+
+    loadAuth();
+
+    const { data } = supabase.auth.onAuthStateChange(() => {
+      loadAuth();
+    });
+
+    return () => {
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Shared by both the quick-message form and the free-visit request --
+  // every inquiry now carries a phone number (from the buyer's profile if
+  // they already have one on file, otherwise the inline field below) so
+  // the seller/broker can actually call back instead of only having an
+  // in-app message thread.
+  async function submitInquiry(kind: "message" | "visit") {
+    const setBusy = kind === "message" ? setSendingMessage : setSendingVisit;
+    const setLocalStatus = kind === "message" ? setStatus : setVisitStatus;
+
+    setLocalStatus("");
+
+    if (!authUser) {
       router.push("/auth");
       return;
     }
 
-    const { error } = await supabase
-      .from("inquiries")
-      .insert({
-        property_id: property.id,
-        buyer_id: user.id,
-        message: message,
-      });
+    const phone = (profilePhone || phoneInput).trim();
 
-    if (error) {
-      setStatus(error.message);
+    if (phone.length < 10) {
+      setLocalStatus(
+        "Please enter a valid phone number (at least 10 digits) so we can reach you."
+      );
       return;
     }
 
-    setStatus("Inquiry sent successfully.");
+    setBusy(true);
+
+    const { error } = await supabase.from("inquiries").insert({
+      property_id: property.id,
+      buyer_id: authUser.id,
+      contact_phone: phone,
+      message:
+        kind === "visit"
+          ? "Requested a free consultancy call and a free site visit for this property."
+          : message,
+      status: kind === "visit" ? "site_visit_scheduled" : "new",
+    });
+
+    setBusy(false);
+
+    if (error) {
+      setLocalStatus(error.message);
+      return;
+    }
+
+    setLocalStatus(
+      kind === "visit"
+        ? "Request received. Our team will call you shortly to schedule your free visit."
+        : "Inquiry sent successfully."
+    );
   }
 
   if (!property) {
@@ -296,28 +371,109 @@ export default function PropertyPage() {
 
           <div className="mt-8 border-t pt-6">
 
-            <h2 className="text-2xl font-bold">
-              Contact Seller
+            <h2 className="text-2xl font-bold text-zinc-900">
+              Interested in this property?
             </h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              Get in touch directly, or let our team show it to you in
+              person -- free.
+            </p>
 
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={4}
-              className="w-full border rounded-lg p-3 mt-4"
-            />
+            {!authChecked ? (
+              <div className="mt-5 h-32 animate-pulse rounded-2xl bg-zinc-100" />
+            ) : !authUser ? (
+              <div className="mt-5 rounded-2xl border border-zinc-200 bg-zinc-50 p-5 text-center">
+                <p className="text-sm font-semibold text-zinc-700">
+                  Sign in to contact the seller or request a free visit
+                </p>
+                <p className="mt-1 text-xs text-zinc-500">
+                  Takes less than a minute -- so the seller or our team can
+                  actually reach you back.
+                </p>
+                <button
+                  onClick={() => router.push("/auth")}
+                  className="mt-4 rounded-lg bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-700"
+                >
+                  Sign In / Sign Up
+                </button>
+              </div>
+            ) : (
+              <div className="mt-5 space-y-5">
 
-            <button
-              onClick={sendInquiry}
-              className="mt-3 bg-red-600 text-white px-6 py-3 rounded-lg font-semibold"
-            >
-              Send Inquiry
-            </button>
+                {!profilePhone && (
+                  <div>
+                    <label className="block text-sm font-medium text-zinc-700 mb-1">
+                      Your phone number
+                    </label>
+                    <input
+                      type="tel"
+                      inputMode="tel"
+                      value={phoneInput}
+                      onChange={(e) => setPhoneInput(e.target.value)}
+                      placeholder="10-digit mobile number"
+                      className="w-full max-w-xs rounded-lg border border-zinc-300 px-3 py-2.5 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                    />
+                    <p className="mt-1 text-xs text-zinc-400">
+                      So the seller or our team can call you back.
+                    </p>
+                  </div>
+                )}
 
-            {status && (
-              <p className="mt-3 font-medium">
-                {status}
-              </p>
+                <div className="rounded-2xl border-2 border-red-100 bg-red-50/60 p-5">
+                  <p className="text-base font-bold text-zinc-900">
+                    🏡 Free Consultancy + Free Site Visit
+                  </p>
+                  <p className="mt-1 text-sm text-zinc-600">
+                    Our team will personally show you this property (and
+                    similar ones nearby) in person -- no cost, no
+                    obligation.
+                  </p>
+
+                  <button
+                    onClick={() => submitInquiry("visit")}
+                    disabled={sendingVisit}
+                    className="mt-3 rounded-lg bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                  >
+                    {sendingVisit ? "Requesting..." : "Request Free Visit"}
+                  </button>
+
+                  {visitStatus && (
+                    <p className="mt-3 text-sm font-medium text-zinc-700">
+                      {visitStatus}
+                    </p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-zinc-400">
+                  <div className="h-px flex-1 bg-zinc-200" />
+                  or send a quick message
+                  <div className="h-px flex-1 bg-zinc-200" />
+                </div>
+
+                <div>
+                  <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    rows={4}
+                    className="w-full rounded-lg border border-zinc-300 p-3 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                  />
+
+                  <button
+                    onClick={() => submitInquiry("message")}
+                    disabled={sendingMessage}
+                    className="mt-3 rounded-lg bg-zinc-900 px-6 py-3 font-semibold text-white hover:bg-zinc-800 disabled:opacity-50"
+                  >
+                    {sendingMessage ? "Sending..." : "Send Inquiry"}
+                  </button>
+
+                  {status && (
+                    <p className="mt-3 text-sm font-medium text-zinc-700">
+                      {status}
+                    </p>
+                  )}
+                </div>
+
+              </div>
             )}
 
           </div>

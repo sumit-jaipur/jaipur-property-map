@@ -631,13 +631,43 @@ export default function AdminInquiriesPage() {
                         {inquiry.buyer_id ? (
                           <p className="mt-1 text-sm font-semibold text-zinc-700">
                             Buyer: {inquiry.buyerEmail}
+                            {inquiry.contact_phone && (
+                              <>
+                                {" "}
+                                &middot;{" "}
+                                <a
+                                  href={`tel:${inquiry.contact_phone}`}
+                                  className="text-red-600 hover:underline"
+                                >
+                                  {inquiry.contact_phone}
+                                </a>
+                              </>
+                            )}
                           </p>
                         ) : (
                           <p className="mt-1 text-sm font-semibold text-zinc-700">
-                            {inquiry.contact_name} &middot;{" "}
-                            {inquiry.contact_phone}
+                            {inquiry.contact_name}
+                            {inquiry.contact_phone && (
+                              <>
+                                {" "}
+                                &middot;{" "}
+                                <a
+                                  href={`tel:${inquiry.contact_phone}`}
+                                  className="text-red-600 hover:underline"
+                                >
+                                  {inquiry.contact_phone}
+                                </a>
+                              </>
+                            )}
                           </p>
                         )}
+
+                        {inquiry.status === "site_visit_scheduled" &&
+                          !inquiry.assigned_to && (
+                            <span className="mt-1 inline-block rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
+                              🏡 Free visit requested -- needs a broker
+                            </span>
+                          )}
 
                         <div className="mt-3 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
                           <p className="text-xs font-bold uppercase tracking-wide text-zinc-400">
