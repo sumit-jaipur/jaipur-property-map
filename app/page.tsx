@@ -1499,9 +1499,15 @@ export default function Home() {
 
 
           {saveSearchOpen && (
-            <div className="mt-3 flex flex-col gap-3 rounded-2xl border border-accent/20 bg-accent-soft p-4 sm:flex-row sm:items-center">
+            // flex-wrap matters here: once the "Saved!" message below appears
+            // demanding a full-width line (sm:basis-full) inside this row,
+            // a nowrap flex row has nowhere to put it except by crushing the
+            // name input down to almost nothing (it was showing 1-2 letters,
+            // looking like a broken icon instead of a text field). Wrapping
+            // lets that message drop to its own line instead.
+            <div className="mt-3 flex flex-col flex-wrap gap-3 rounded-2xl border border-accent/20 bg-accent-soft p-4 sm:flex-row sm:items-center">
 
-              <div className="flex-1">
+              <div className="min-w-0 flex-1 basis-full sm:basis-auto">
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-zinc-500">
                   Alert name
                 </label>
@@ -1512,7 +1518,7 @@ export default function Home() {
                     setSaveSearchName(e.target.value)
                   }
                   placeholder="Example: 3 BHK in Vaishali Nagar"
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm outline-none"
+                  className="w-full min-w-0 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm outline-none"
                 />
               </div>
 
