@@ -29,14 +29,14 @@ type Property = {
 
 function formatPrice(price: number) {
   if (price >= 10000000) {
-    return "INR " + (price / 10000000).toFixed(2) + " Cr";
+    return "₹" + (price / 10000000).toFixed(2) + " Cr";
   }
 
   if (price >= 100000) {
-    return "INR " + (price / 100000).toFixed(0) + " Lakh";
+    return "₹" + (price / 100000).toFixed(0) + " Lakh";
   }
 
-  return "INR " + price.toLocaleString("en-IN");
+  return "₹" + price.toLocaleString("en-IN");
 }
 
 function parseAreaSqft(area: string) {
@@ -77,7 +77,7 @@ const ROWS: {
       const value = pricePerSqft(p.price, p.area);
 
       return value
-        ? `INR ${value.toLocaleString("en-IN")}`
+        ? `₹${value.toLocaleString("en-IN")}`
         : "-";
     },
   },
