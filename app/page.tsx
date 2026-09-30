@@ -1433,19 +1433,24 @@ export default function Home() {
                   updateMinPrice(e.target.value, minPriceUnit)
                 }
                 placeholder="Min"
-                className="w-16 min-w-0 rounded-xl border border-zinc-200 px-2.5 py-2 text-sm outline-none"
+                className="w-14 min-w-0 rounded-xl border border-zinc-200 px-2 py-2 text-sm outline-none"
               />
 
-              <select
-                value={minPriceUnit}
-                onChange={(e) =>
-                  updateMinPrice(minPriceText, e.target.value as PriceUnit)
-                }
-                className="shrink-0 rounded-xl border border-zinc-200 bg-white px-1.5 py-2 text-xs font-semibold text-zinc-600 outline-none"
-              >
-                <option value="lakh">Lakh</option>
-                <option value="crore">Cr</option>
-              </select>
+              <div className="relative shrink-0">
+                <select
+                  value={minPriceUnit}
+                  onChange={(e) =>
+                    updateMinPrice(minPriceText, e.target.value as PriceUnit)
+                  }
+                  className="w-[46px] appearance-none rounded-xl border border-zinc-200 bg-white py-2 pl-2 pr-3.5 text-[11px] font-semibold text-zinc-600 outline-none"
+                >
+                  <option value="lakh">Lakh</option>
+                  <option value="crore">Cr</option>
+                </select>
+                <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-[8px] text-zinc-400">
+                  ▾
+                </span>
+              </div>
             </div>
 
 
@@ -1460,19 +1465,24 @@ export default function Home() {
                   updateMaxPrice(e.target.value, maxPriceUnit)
                 }
                 placeholder="Max"
-                className="w-16 min-w-0 rounded-xl border border-zinc-200 px-2.5 py-2 text-sm outline-none"
+                className="w-14 min-w-0 rounded-xl border border-zinc-200 px-2 py-2 text-sm outline-none"
               />
 
-              <select
-                value={maxPriceUnit}
-                onChange={(e) =>
-                  updateMaxPrice(maxPriceText, e.target.value as PriceUnit)
-                }
-                className="shrink-0 rounded-xl border border-zinc-200 bg-white px-1.5 py-2 text-xs font-semibold text-zinc-600 outline-none"
-              >
-                <option value="lakh">Lakh</option>
-                <option value="crore">Cr</option>
-              </select>
+              <div className="relative shrink-0">
+                <select
+                  value={maxPriceUnit}
+                  onChange={(e) =>
+                    updateMaxPrice(maxPriceText, e.target.value as PriceUnit)
+                  }
+                  className="w-[46px] appearance-none rounded-xl border border-zinc-200 bg-white py-2 pl-2 pr-3.5 text-[11px] font-semibold text-zinc-600 outline-none"
+                >
+                  <option value="lakh">Lakh</option>
+                  <option value="crore">Cr</option>
+                </select>
+                <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-[8px] text-zinc-400">
+                  ▾
+                </span>
+              </div>
             </div>
 
 
