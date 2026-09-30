@@ -119,7 +119,7 @@ export default function BrokerDashboardPage() {
 
     const authedFetch = await getAuthedFetch();
     const response = await authedFetch("/api/broker/inquiries");
-    const data = await response.json();
+    const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
       setError(
@@ -148,6 +148,7 @@ export default function BrokerDashboardPage() {
     } = await supabase.auth.getUser();
 
     if (!user) {
+      setSubmittingId(null);
       router.replace("/auth");
       return;
     }
@@ -194,7 +195,9 @@ export default function BrokerDashboardPage() {
       .from("property-images")
       .getPublicUrl(fileName);
 
-    const { error: updateError } = await supabase
+    // .select("id") so we can tell when RLS filtered the row out: an
+    // update that matches zero rows returns no error at all.
+    const { data: updatedRows, error: updateError } = await supabase
       .from("inquiries")
       .update({
         visit_completed: true,
@@ -202,12 +205,20 @@ export default function BrokerDashboardPage() {
         visit_photo_url: publicUrlData.publicUrl,
         visit_completed_at: new Date().toISOString(),
       })
-      .eq("id", leadId);
+      .eq("id", leadId)
+      .select("id");
 
     setSubmittingId(null);
 
     if (updateError) {
       setError(`Failed to save your visit confirmation: ${updateError.message}`);
+      return;
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      setError(
+        "Your visit confirmation was not saved -- this visit may no longer be assigned to you."
+      );
       return;
     }
 
