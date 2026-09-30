@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   const { data: inquiries, error: inquiriesError } = await supabaseAdmin
     .from("inquiries")
     .select(
-      "id, property_id, buyer_id, contact_name, contact_phone, source, message, status, assigned_to, admin_notes, created_at, updated_at, properties (id, title, type, price, image)"
+      "id, property_id, buyer_id, contact_name, contact_phone, source, message, status, assigned_to, admin_notes, created_at, updated_at, visit_completed, visit_note, visit_photo_url, visit_completed_at, properties (id, title, type, price, image)"
     )
     .order("created_at", { ascending: false });
 

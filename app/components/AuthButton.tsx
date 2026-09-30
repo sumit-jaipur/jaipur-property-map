@@ -8,6 +8,7 @@ import { getAccountTypeLabel } from "../lib/accountTypes";
 export default function AuthButton() {
   const [email, setEmail] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isBroker, setIsBroker] = useState(false);
   const [accountTypeLabel, setAccountTypeLabel] = useState("Buyer");
   const [open, setOpen] = useState(false);
   const [unseenAlertCount, setUnseenAlertCount] = useState(0);
@@ -22,6 +23,7 @@ export default function AuthButton() {
     if (!user) {
       setEmail(null);
       setIsAdmin(false);
+      setIsBroker(false);
       setUnseenAlertCount(0);
       return;
     }
@@ -35,6 +37,7 @@ export default function AuthButton() {
       .single();
 
     setIsAdmin(profile?.role === "admin");
+    setIsBroker(["broker", "agent"].includes(profile?.account_type || ""));
     setAccountTypeLabel(getAccountTypeLabel(profile?.account_type));
 
     const { count } = await supabase
@@ -80,6 +83,7 @@ export default function AuthButton() {
 
     setEmail(null);
     setIsAdmin(false);
+    setIsBroker(false);
     setOpen(false);
 
     window.location.href = "/";
@@ -158,6 +162,17 @@ export default function AuthButton() {
               >
                 <span>🛡️</span>
                 Admin Dashboard
+              </Link>
+            )}
+
+            {isBroker && (
+              <Link
+                href="/broker"
+                onClick={() => setOpen(false)}
+                className="flex items-center gap-3 rounded-xl bg-blue-50 px-3 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+              >
+                <span>📋</span>
+                My Visits
               </Link>
             )}
 

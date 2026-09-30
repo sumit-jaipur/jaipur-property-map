@@ -67,6 +67,10 @@ type Inquiry = {
   admin_notes: string | null;
   created_at: string;
   updated_at: string;
+  visit_completed: boolean;
+  visit_note: string | null;
+  visit_photo_url: string | null;
+  visit_completed_at: string | null;
   properties: Property | null;
 };
 
@@ -709,6 +713,68 @@ export default function AdminInquiriesPage() {
                             let them know directly for now.
                           </span>
                         </label>
+
+                        {inquiry.assigned_to && (
+                          <div
+                            className={`rounded-xl border p-3 text-xs ${
+                              inquiry.visit_completed
+                                ? "border-green-100 bg-green-50/60"
+                                : "border-zinc-200 bg-zinc-50"
+                            }`}
+                          >
+                            <span
+                              className={`font-bold uppercase tracking-wide ${
+                                inquiry.visit_completed
+                                  ? "text-green-700"
+                                  : "text-zinc-400"
+                              }`}
+                            >
+                              {inquiry.visit_completed
+                                ? "✓ Visit verified"
+                                : "Visit not yet verified"}
+                            </span>
+
+                            {inquiry.visit_completed ? (
+                              <>
+                                {inquiry.visit_completed_at && (
+                                  <p className="mt-1 text-zinc-500">
+                                    {new Date(
+                                      inquiry.visit_completed_at
+                                    ).toLocaleDateString("en-IN", {
+                                      day: "numeric",
+                                      month: "short",
+                                      year: "numeric",
+                                    })}
+                                  </p>
+                                )}
+                                {inquiry.visit_note && (
+                                  <p className="mt-1 text-zinc-600">
+                                    &ldquo;{inquiry.visit_note}&rdquo;
+                                  </p>
+                                )}
+                                {inquiry.visit_photo_url && (
+                                  <a
+                                    href={inquiry.visit_photo_url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-2 inline-block"
+                                  >
+                                    <img
+                                      src={inquiry.visit_photo_url}
+                                      alt="Visit proof"
+                                      className="h-16 w-24 rounded-lg object-cover"
+                                    />
+                                  </a>
+                                )}
+                              </>
+                            ) : (
+                              <p className="mt-1 text-zinc-400">
+                                Waiting on the broker to confirm the visit
+                                from their dashboard.
+                              </p>
+                            )}
+                          </div>
+                        )}
 
                         <label className="block">
                           <span className="text-xs font-bold uppercase tracking-wide text-zinc-400">

@@ -132,6 +132,8 @@ export default function AiSuggestionsPage() {
   const [properties, setProperties] = useState<Property[]>([]);
   const [buildQueue, setBuildQueue] = useState<BuildQueueItem[]>([]);
   const [updatingQueueId, setUpdatingQueueId] = useState<number | null>(null);
+  const [runningAudit, setRunningAudit] = useState(false);
+
   const [dispatchingQueueId, setDispatchingQueueId] = useState<number | null>(
     null
   );
@@ -301,6 +303,65 @@ export default function AiSuggestionsPage() {
           : item
       )
     );
+  }
+
+  // One-click "analyze the whole system for bugs and fix them" -- Sumit's
+  // own request. Reuses the exact same, already-proven pipeline as a
+  // market-trend "feature" recommendation: queues one build_queue row,
+  // then immediately dispatches it to GitHub as an "ai-build-feature"
+  // issue. The claude-build.yml workflow picks that up, reviews the
+  // codebase, and opens a pull request with whatever it finds and fixes.
+  // Like every other AI-built feature, it lands as a PR for you to review
+  // and click "Merge & Go Live" on -- nothing ships to the live site on
+  // its own, on purpose, same as the rest of this pipeline.
+  async function handleRunSystemAudit() {
+    setRunningAudit(true);
+    setError("");
+
+    const { data: insertedRows, error: queueError } = await supabase
+      .from("build_queue")
+      .insert([
+        {
+          title: "System-wide audit: find and fix bugs",
+          detail:
+            "Do a full audit of this Next.js + Supabase real-estate app " +
+            "(99Bricks). Look across the app/ directory -- pages, API " +
+            "routes, and lib/ helpers -- for real bugs: broken or " +
+            "inconsistent logic, unhandled error cases (a Supabase call " +
+            "whose .error is never checked, a null/undefined that isn't " +
+            "guarded, a race condition), TypeScript type mismatches, " +
+            "obviously dead or unreachable code, and any admin/API route " +
+            "that's missing the verifyAdmin check other admin routes use. " +
+            "Do not change product behavior, styling, or add new " +
+            "features -- only fix genuine defects, and explain each fix " +
+            "in the PR description with the file and what was wrong. If " +
+            "you don't find a real bug in a file, leave it alone rather " +
+            "than making a speculative change. Skip anything that would " +
+            "need a database migration -- flag those in the PR " +
+            "description instead of changing the schema.",
+          type: "feature",
+          status: "queued",
+          source_suggestion_id: null,
+        },
+      ])
+      .select()
+      .single();
+
+    if (queueError || !insertedRows) {
+      setError(
+        "Could not queue the system audit (" +
+          (queueError?.message || "unknown error") +
+          "). If build_queue doesn't exist yet, run its migration first."
+      );
+      setRunningAudit(false);
+      return;
+    }
+
+    const newItem = insertedRows as BuildQueueItem;
+    setBuildQueue((current) => [newItem, ...current]);
+
+    await handleDispatchBuild(newItem.id);
+    setRunningAudit(false);
   }
 
   // The one manual step in the pipeline: merges the pull request Claude
@@ -891,6 +952,42 @@ export default function AiSuggestionsPage() {
           </div>
         )}
 
+        {/* SYSTEM AUDIT -- Sumit's "press a button, find bugs, fix them"
+            request. Always visible (not tucked inside the build queue,
+            which only shows once something's in it) -- one click queues
+            + dispatches a feature build the same way an approved
+            market-trend recommendation does, so it opens a real GitHub
+            issue Claude picks up right away. */}
+
+        <section className="mb-8 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+            System health
+          </p>
+
+          <h2 className="mt-1 text-xl font-black text-zinc-900">
+            Analyze the whole system for bugs
+          </h2>
+
+          <p className="mt-1 max-w-2xl text-sm text-zinc-500">
+            One click sends the whole codebase to Claude for a full review --
+            broken logic, unhandled errors, type mismatches, admin routes
+            missing their security check. It opens a pull request with
+            whatever it finds and fixes; nothing goes live until you review
+            it and tap &quot;Merge &amp; Go Live&quot;, same as every other
+            AI-built change.
+          </p>
+
+          <button
+            type="button"
+            onClick={handleRunSystemAudit}
+            disabled={runningAudit}
+            className="mt-4 rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-red-600 disabled:opacity-50"
+          >
+            {runningAudit
+              ? "Starting audit..."
+              : "🔍 Analyze whole system for bugs"}
+          </button>
+        </section>
 
         {/* BUILD QUEUE -- everything approved from a market-trend
             recommendation lands here. "feature" items automatically open
