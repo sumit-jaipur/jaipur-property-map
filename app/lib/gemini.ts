@@ -315,8 +315,9 @@ const CURRENT_PLATFORM_CAPABILITIES = `
 - Filters: property type, BHK, price range, verified-listing badge.
 - Property detail pages: photos, price, BHK, facing, parking, road width,
   AI-written description and SEO meta (admin-reviewed).
-- Favorites, side-by-side Compare tool, EMI calculator, WhatsApp share
-  button, SEO-focused locality landing pages.
+- Favorites, side-by-side Compare tool, EMI calculator, Rajasthan stamp
+  duty & registration cost calculator, WhatsApp share button, SEO-focused
+  locality landing pages.
 - AI Buyer Advisor (/ai-advisor): a free-text or voice conversation where a
   buyer describes budget/needs and Gemini recommends real matching
   listings with reasons.
@@ -327,12 +328,24 @@ const CURRENT_PLATFORM_CAPABILITIES = `
   description/SEO rewrites, flags under/overpriced listings (and can
   auto-apply the suggested price on approval), flags stale listings missing
   a description (and can auto-write one on approval), pitches content
-  ideas, and runs 5-area market trend research (design, SEO/content,
-  marketing, features, monetization) -- every suggestion needs a human
-  Approve before anything changes.
+  ideas, and runs 8-area market trend research (design, SEO/content,
+  marketing, features, monetization, trust/legal, rental management,
+  financing) -- every suggestion needs a human Approve before anything
+  changes. Also has a one-click "Analyze whole system for bugs" button that
+  queues a full codebase audit the same way.
 - A "build_queue": an approved market-trend "feature" recommendation
   becomes a real build task tracked for a future coding session; an
   approved "content" recommendation gets drafted into a full article.
+- Saved-search alerts (/saved-searches, /alerts): a buyer saves a search
+  filter (location/radius, type, BHK, price, facing, parking, road width)
+  and gets notified in-app via the Alerts bell (unseen-count badge) when a
+  newly-approved listing matches it.
+- Broker/agent visit-verification pipeline (/broker, plus a section in
+  /admin/inquiries): admin assigns a buyer inquiry to a broker, the broker
+  confirms an in-person visit with a note and a required photo (RLS-locked
+  so a broker can only touch their own assigned leads and can't edit a
+  visit after confirming it), admin sees the proof. This is an internal
+  sales-pipeline tool, not a buyer-facing "request a visit" button.
 - A live blog system (/blog, /admin/blog "Blog Studio"): Gemini drafts a
   full SEO article from a queued content idea, an admin reviews/edits it,
   and Publish makes it live on the public site instantly -- no deploy
@@ -351,10 +364,13 @@ const CURRENT_PLATFORM_CAPABILITIES = `
 
 Explicitly NOT built yet (real gaps, fair game to recommend if a
 competitor is doing something related): any lead-capture form for
-anonymous visitors, WhatsApp-based conversations or notifications, saved
-searches or alerts, a real created_at/updated_at timestamp on listings, any
-analytics/traffic tracking, payments or any paid tier, a field/visit-agent
-system, AI-assisted review of new seller-submitted listings, and any
+anonymous visitors, WhatsApp-based (or email-based) delivery of saved-
+search alerts (today they're in-app only, via the Alerts bell), a real
+created_at/updated_at timestamp on listings, any analytics/traffic
+tracking, payments or any paid tier, a buyer-facing "request a site visit"
+button (the broker side of visit verification exists, see above, but a
+buyer can't initiate one), AI-assisted review of new seller-submitted
+listings, and any
 AI-assisted visual/design changes.
 `.trim();
 
