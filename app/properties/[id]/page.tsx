@@ -57,6 +57,30 @@ export default function PropertyPage() {
   const [visitStatus, setVisitStatus] = useState("");
   const [sendingVisit, setSendingVisit] = useState(false);
 
+  // Full-screen photo viewer -- the hero photo below shows the WHOLE
+  // image (object-contain on a blurred backdrop of the same photo)
+  // instead of cropping it to a fixed box, and clicking it opens this
+  // for an even bigger look. Keeps tall/portrait phone photos (common
+  // from site visits) from getting their top/bottom cut off.
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+
+  useEffect(() => {
+    if (!lightboxOpen) return;
+
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setLightboxOpen(false);
+      if (e.key === "ArrowLeft") {
+        setActiveIndex((i) => (i === 0 ? gallery.length - 1 : i - 1));
+      }
+      if (e.key === "ArrowRight") {
+        setActiveIndex((i) => (i === gallery.length - 1 ? 0 : i + 1));
+      }
+    }
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [lightboxOpen, gallery.length]);
+
   useEffect(() => {
     async function loadProperty() {
       const { data, error } = await supabase
@@ -271,11 +295,72 @@ export default function PropertyPage() {
 
       <div className="max-w-4xl mx-auto bg-white rounded-xl border overflow-hidden mt-6 mb-10 sm:mx-auto sm:mt-8 mx-4">
 
-        <img
-          src={heroImage}
-          alt={property.title}
-          className="w-full h-80 object-cover"
-        />
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-zinc-900 sm:aspect-[16/9]">
+
+          {/* Blurred, zoomed copy of the same photo fills the box so
+              there's never an empty letterbox bar -- then the real
+              photo sits on top, fully visible (object-contain), never
+              cropped. This is the fix for photos looking cut off. */}
+          <img
+            src={heroImage}
+            alt=""
+            aria-hidden="true"
+            className="absolute inset-0 h-full w-full scale-110 object-cover opacity-40 blur-2xl"
+          />
+
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(true)}
+            className="group absolute inset-0 flex h-full w-full cursor-zoom-in items-center justify-center"
+            aria-label="View full-size photo"
+          >
+            <img
+              src={heroImage}
+              alt={property.title}
+              className="relative z-10 h-full w-full object-contain"
+            />
+
+            <span className="absolute bottom-3 right-3 z-20 rounded-full bg-black/60 px-3 py-1.5 text-xs font-semibold text-white opacity-0 transition group-hover:opacity-100">
+              Click to zoom
+            </span>
+          </button>
+
+          {gallery.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveIndex((i) => (i === 0 ? gallery.length - 1 : i - 1));
+                }}
+                className="absolute left-2 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+                aria-label="Previous photo"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-5 w-5">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveIndex((i) => (i === gallery.length - 1 ? 0 : i + 1));
+                }}
+                className="absolute right-2 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/50 p-2 text-white hover:bg-black/70"
+                aria-label="Next photo"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-5 w-5">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+
+              <span className="absolute left-3 top-3 z-20 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">
+                {activeIndex + 1} / {gallery.length}
+              </span>
+            </>
+          )}
+        </div>
 
         {gallery.length > 1 && (
           <div className="flex gap-2 overflow-x-auto border-t bg-zinc-50 p-3">
@@ -487,6 +572,67 @@ export default function PropertyPage() {
       <div className="max-w-4xl mx-4 mb-10 sm:mx-auto">
         <StampDutyCalculator defaultPrice={Number(property.price)} />
       </div>
+
+      {lightboxOpen && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setLightboxOpen(false)}
+        >
+          <button
+            type="button"
+            onClick={() => setLightboxOpen(false)}
+            className="absolute right-4 top-4 z-10 rounded-full bg-white/10 p-2 text-white hover:bg-white/20"
+            aria-label="Close"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-6 w-6">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+
+          <img
+            src={heroImage}
+            alt={property.title}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] max-w-full object-contain"
+          />
+
+          {gallery.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveIndex((i) => (i === 0 ? gallery.length - 1 : i - 1));
+                }}
+                className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
+                aria-label="Previous photo"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-6 w-6">
+                  <path d="M15 18l-6-6 6-6" />
+                </svg>
+              </button>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveIndex((i) => (i === gallery.length - 1 ? 0 : i + 1));
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white hover:bg-white/20"
+                aria-label="Next photo"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" className="h-6 w-6">
+                  <path d="M9 18l6-6-6-6" />
+                </svg>
+              </button>
+
+              <span className="absolute left-4 bottom-4 z-10 rounded-full bg-black/60 px-2.5 py-1 text-xs font-semibold text-white">
+                {activeIndex + 1} / {gallery.length}
+              </span>
+            </>
+          )}
+        </div>
+      )}
     </main>
   );
 }
