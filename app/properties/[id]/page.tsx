@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import EmiCalculator from "../../components/EmiCalculator";
+import StampDutyCalculator from "../../components/StampDutyCalculator";
 import { LOCALITIES } from "../../lib/localities";
 import { getAccountTypeLabel } from "../../lib/accountTypes";
 
@@ -325,6 +326,10 @@ export default function PropertyPage() {
 
       <div className="max-w-4xl mx-4 mb-10 sm:mx-auto">
         <EmiCalculator defaultPrice={Number(property.price)} />
+      </div>
+
+      <div className="max-w-4xl mx-4 mb-10 sm:mx-auto">
+        <StampDutyCalculator defaultPrice={Number(property.price)} />
       </div>
     </main>
   );
