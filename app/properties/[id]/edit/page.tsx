@@ -13,6 +13,18 @@ import PriceInput, {
 
 const MAX_PHOTOS = 15;
 
+// Supabase Storage buckets commonly cap a single file at 50MB. Photos are
+// kept well under that so a phone's full-resolution shot never trips it;
+// video gets the benefit of the doubt up to the bucket's own ceiling.
+// Checking this at pick-time (rather than only finding out mid-upload)
+// means editing a listing never fails halfway through re-uploading media.
+const MAX_PHOTO_MB = 10;
+const MAX_VIDEO_MB = 50;
+
+function megabytes(bytes: number): string {
+  return (bytes / (1024 * 1024)).toFixed(1);
+}
+
 type ExistingPhoto = { id: number; url: string };
 
 export default function EditPropertyPage() {
@@ -139,13 +151,56 @@ export default function EditPropertyPage() {
 
     if (picked.length === 0) return;
 
+    const maxBytes = MAX_PHOTO_MB * 1024 * 1024;
+    const tooBig = picked.filter((file) => file.size > maxBytes);
+    const okToAdd = picked.filter((file) => file.size <= maxBytes);
+
+    if (tooBig.length > 0) {
+      setError(
+        `${tooBig
+          .map((f) => `"${f.name}" (${megabytes(f.size)}MB)`)
+          .join(", ")} ${
+          tooBig.length === 1 ? "is" : "are"
+        } over the ${MAX_PHOTO_MB}MB photo limit and ${
+          tooBig.length === 1 ? "wasn't" : "weren't"
+        } added. Try a smaller photo or a more compressed export.`
+      );
+    } else {
+      setError("");
+    }
+
     setNewImageFiles((prev) => {
-      const combined = [...prev, ...picked];
+      const combined = [...prev, ...okToAdd];
       const room = Math.max(0, MAX_PHOTOS - existingPhotos.length);
       return combined.slice(0, room);
     });
 
     e.target.value = "";
+  }
+
+  function handleVideoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = e.target.files?.[0] ?? null;
+
+    if (!picked) {
+      setVideoFile(null);
+      return;
+    }
+
+    const maxBytes = MAX_VIDEO_MB * 1024 * 1024;
+
+    if (picked.size > maxBytes) {
+      setError(
+        `"${picked.name}" is ${megabytes(
+          picked.size
+        )}MB, over the ${MAX_VIDEO_MB}MB video limit. Try a shorter clip or compress it before uploading.`
+      );
+      e.target.value = "";
+      return;
+    }
+
+    setError("");
+    setVideoFile(picked);
+    setRemoveVideo(false);
   }
 
   function removeExistingPhoto(id: number) {
@@ -623,6 +678,10 @@ export default function EditPropertyPage() {
                 {totalPhotoCount} of {MAX_PHOTOS} photos
               </h2>
 
+              <p className="mt-1 text-xs text-zinc-400">
+                {MAX_PHOTO_MB}MB per photo
+              </p>
+
               {existingPhotos.length > 0 && (
                 <div className="mt-4 grid grid-cols-3 gap-2">
                   {existingPhotos.map((photo, index) => (
@@ -739,16 +798,16 @@ export default function EditPropertyPage() {
               )}
 
               <p className="mt-4 text-sm font-semibold text-zinc-700">
-                {currentVideoUrl ? "Replace video" : "Add a video tour"}
+                {currentVideoUrl ? "Replace video" : "Add a video tour"}{" "}
+                <span className="font-normal text-zinc-400">
+                  (up to {MAX_VIDEO_MB}MB)
+                </span>
               </p>
 
               <input
                 type="file"
                 accept="video/*"
-                onChange={(e) => {
-                  setVideoFile(e.target.files?.[0] ?? null);
-                  setRemoveVideo(false);
-                }}
+                onChange={handleVideoSelected}
                 className="mt-3 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-red-50 file:px-3 file:py-2 file:font-semibold file:text-red-600"
               />
 

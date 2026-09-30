@@ -12,6 +12,19 @@ import PriceInput, {
 
 const MAX_PHOTOS = 15;
 
+// Supabase Storage buckets commonly cap a single file at 50MB. Photos are
+// kept well under that so a phone's full-resolution shot never trips it;
+// video gets the benefit of the doubt up to the bucket's own ceiling.
+// Checking this at pick-time (rather than only finding out mid-upload,
+// after several photos have already gone to storage) means a seller never
+// ends up with a half-submitted listing because the video was too big.
+const MAX_PHOTO_MB = 10;
+const MAX_VIDEO_MB = 50;
+
+function megabytes(bytes: number): string {
+  return (bytes / (1024 * 1024)).toFixed(1);
+}
+
 export default function AddPropertyPage() {
   const router = useRouter();
 
@@ -75,14 +88,56 @@ export default function AddPropertyPage() {
 
     if (picked.length === 0) return;
 
+    const maxBytes = MAX_PHOTO_MB * 1024 * 1024;
+    const tooBig = picked.filter((file) => file.size > maxBytes);
+    const okToAdd = picked.filter((file) => file.size <= maxBytes);
+
+    if (tooBig.length > 0) {
+      setError(
+        `${tooBig
+          .map((f) => `"${f.name}" (${megabytes(f.size)}MB)`)
+          .join(", ")} ${
+          tooBig.length === 1 ? "is" : "are"
+        } over the ${MAX_PHOTO_MB}MB photo limit and ${
+          tooBig.length === 1 ? "wasn't" : "weren't"
+        } added. Try a smaller photo or a more compressed export.`
+      );
+    } else {
+      setError("");
+    }
+
     setImageFiles((prev) => {
-      const combined = [...prev, ...picked];
+      const combined = [...prev, ...okToAdd];
       return combined.slice(0, MAX_PHOTOS);
     });
 
     // Let the same input be used again to add more photos in a second
     // pick without the browser thinking nothing changed.
     e.target.value = "";
+  }
+
+  function handleVideoSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = e.target.files?.[0] ?? null;
+
+    if (!picked) {
+      setVideoFile(null);
+      return;
+    }
+
+    const maxBytes = MAX_VIDEO_MB * 1024 * 1024;
+
+    if (picked.size > maxBytes) {
+      setError(
+        `"${picked.name}" is ${megabytes(
+          picked.size
+        )}MB, over the ${MAX_VIDEO_MB}MB video limit. Try a shorter clip or compress it before uploading.`
+      );
+      e.target.value = "";
+      return;
+    }
+
+    setError("");
+    setVideoFile(picked);
   }
 
   function removePhoto(index: number) {
@@ -561,7 +616,7 @@ export default function AddPropertyPage() {
                 </p>
 
                 <p className="mt-1 text-xs text-zinc-400">
-                  JPG, PNG or WebP · up to {MAX_PHOTOS} photos
+                  JPG, PNG or WebP · up to {MAX_PHOTOS} photos, {MAX_PHOTO_MB}MB each
                 </p>
 
                 <input
@@ -635,15 +690,13 @@ export default function AddPropertyPage() {
 
               <p className="mt-1 text-xs text-zinc-500">
                 A short walkthrough video helps buyers get a feel for the
-                property before scheduling a visit.
+                property before scheduling a visit. Up to {MAX_VIDEO_MB}MB.
               </p>
 
               <input
                 type="file"
                 accept="video/*"
-                onChange={(e) =>
-                  setVideoFile(e.target.files?.[0] ?? null)
-                }
+                onChange={handleVideoSelected}
                 className="mt-4 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-red-50 file:px-3 file:py-2 file:font-semibold file:text-red-600"
               />
 
