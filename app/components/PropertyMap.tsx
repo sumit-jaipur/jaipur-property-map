@@ -115,6 +115,15 @@ export default function PropertyMap({
 
     if (!map) return;
 
+    // On first load the map's canvas can still be sized to a stale/zero
+    // layout (the sidebar list and responsive CSS settle a beat after the
+    // map fires "load"), so its cached bounds come back wrong and every
+    // marker clusters outside them -- pins vanish until a pan/zoom forces
+    // mapbox to recompute. Resizing to the container's real, current size
+    // before reading bounds keeps this in sync every time, not just once
+    // the user happens to interact with the map.
+    map.resize();
+
     const bounds = map.getBounds();
 
     if (!bounds) return;
@@ -175,6 +184,7 @@ export default function PropertyMap({
       reuseMaps
       onLoad={updateViewport}
       onMove={updateViewport}
+      onIdle={updateViewport}
     >
       <NavigationControl position="top-right" visualizePitch />
 
