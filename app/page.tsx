@@ -11,6 +11,7 @@ import {
   defaultSearchName,
 } from "./lib/savedSearch";
 import { LOCALITIES } from "./lib/localities";
+import { PriceUnit, priceUnitToRupees } from "./components/PriceInput";
 
 type Property = {
   id: number;
@@ -195,6 +196,15 @@ export default function Home() {
     setBhk,
   ] = useState("Any");
 
+  // minPrice/maxPrice stay in plain rupees underneath -- that's what
+  // filtering, the saved-search filters object, and activeFilterCount all
+  // already expect. What was broken is the FIELD above them: a bare
+  // type="number" box asking for a raw rupee figure ("7000000") with no
+  // unit shown at all, so "70" and "50" typed there were read as ₹70 and
+  // ₹50 -- meaningless next to real listing prices. These extra bits of
+  // state hold what's actually shown (a Lakh/Crore pair, same as the
+  // add-property price field) and get converted to rupees on every
+  // change via the same helper that field already uses.
   const [
     minPrice,
     setMinPrice,
@@ -204,6 +214,23 @@ export default function Home() {
     maxPrice,
     setMaxPrice,
   ] = useState("");
+
+  const [minPriceText, setMinPriceText] = useState("");
+  const [minPriceUnit, setMinPriceUnit] = useState<PriceUnit>("lakh");
+  const [maxPriceText, setMaxPriceText] = useState("");
+  const [maxPriceUnit, setMaxPriceUnit] = useState<PriceUnit>("lakh");
+
+  function updateMinPrice(text: string, unit: PriceUnit) {
+    setMinPriceText(text);
+    setMinPriceUnit(unit);
+    setMinPrice(text ? String(priceUnitToRupees(text, unit)) : "");
+  }
+
+  function updateMaxPrice(text: string, unit: PriceUnit) {
+    setMaxPriceText(text);
+    setMaxPriceUnit(unit);
+    setMaxPrice(text ? String(priceUnitToRupees(text, unit)) : "");
+  }
 
   const [
     showMoreFilters,
@@ -1065,6 +1092,10 @@ export default function Home() {
     setBhk("Any");
     setMinPrice("");
     setMaxPrice("");
+    setMinPriceText("");
+    setMaxPriceText("");
+    setMinPriceUnit("lakh");
+    setMaxPriceUnit("lakh");
     setFacing("Any");
     setParking("Any");
     setMinRoadWidth("");
@@ -1391,30 +1422,58 @@ export default function Home() {
             </div>
 
 
-            <input
-              type="number"
-              value={minPrice}
-              onChange={(e) =>
-                setMinPrice(
-                  e.target.value
-                )
-              }
-              placeholder="Min Price"
-              className="w-28 shrink-0 rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none"
-            />
+            <div className="flex shrink-0 items-center gap-1">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                value={minPriceText}
+                onChange={(e) =>
+                  updateMinPrice(e.target.value, minPriceUnit)
+                }
+                placeholder="Min"
+                className="w-16 min-w-0 rounded-xl border border-zinc-200 px-2.5 py-2 text-sm outline-none"
+              />
+
+              <select
+                value={minPriceUnit}
+                onChange={(e) =>
+                  updateMinPrice(minPriceText, e.target.value as PriceUnit)
+                }
+                className="shrink-0 rounded-xl border border-zinc-200 bg-white px-1.5 py-2 text-xs font-semibold text-zinc-600 outline-none"
+              >
+                <option value="lakh">Lakh</option>
+                <option value="crore">Cr</option>
+              </select>
+            </div>
 
 
-            <input
-              type="number"
-              value={maxPrice}
-              onChange={(e) =>
-                setMaxPrice(
-                  e.target.value
-                )
-              }
-              placeholder="Max Price"
-              className="w-28 shrink-0 rounded-xl border border-zinc-200 px-3 py-2 text-sm outline-none"
-            />
+            <div className="flex shrink-0 items-center gap-1">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                inputMode="decimal"
+                value={maxPriceText}
+                onChange={(e) =>
+                  updateMaxPrice(e.target.value, maxPriceUnit)
+                }
+                placeholder="Max"
+                className="w-16 min-w-0 rounded-xl border border-zinc-200 px-2.5 py-2 text-sm outline-none"
+              />
+
+              <select
+                value={maxPriceUnit}
+                onChange={(e) =>
+                  updateMaxPrice(maxPriceText, e.target.value as PriceUnit)
+                }
+                className="shrink-0 rounded-xl border border-zinc-200 bg-white px-1.5 py-2 text-xs font-semibold text-zinc-600 outline-none"
+              >
+                <option value="lakh">Lakh</option>
+                <option value="crore">Cr</option>
+              </select>
+            </div>
 
 
             {searchLocation && (
