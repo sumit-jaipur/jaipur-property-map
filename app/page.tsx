@@ -1422,7 +1422,7 @@ export default function Home() {
             </div>
 
 
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="relative shrink-0">
               <input
                 type="number"
                 min="0"
@@ -1433,28 +1433,25 @@ export default function Home() {
                   updateMinPrice(e.target.value, minPriceUnit)
                 }
                 placeholder="Min"
-                className="w-14 min-w-0 rounded-xl border border-zinc-200 px-2 py-2 text-sm outline-none"
+                className="w-[84px] min-w-0 rounded-xl border border-zinc-200 py-2 pl-2.5 pr-8 text-sm outline-none"
               />
-
-              <div className="relative shrink-0">
-                <select
-                  value={minPriceUnit}
-                  onChange={(e) =>
-                    updateMinPrice(minPriceText, e.target.value as PriceUnit)
-                  }
-                  className="w-[46px] appearance-none rounded-xl border border-zinc-200 bg-white py-2 pl-2 pr-3.5 text-[11px] font-semibold text-zinc-600 outline-none"
-                >
-                  <option value="lakh">Lakh</option>
-                  <option value="crore">Cr</option>
-                </select>
-                <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-[8px] text-zinc-400">
-                  ▾
-                </span>
-              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  updateMinPrice(
+                    minPriceText,
+                    minPriceUnit === "lakh" ? "crore" : "lakh"
+                  )
+                }
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600 transition hover:bg-zinc-200"
+                title="Tap to switch Lakh / Cr"
+              >
+                {minPriceUnit === "lakh" ? "L" : "Cr"}
+              </button>
             </div>
 
 
-            <div className="flex shrink-0 items-center gap-1">
+            <div className="relative shrink-0">
               <input
                 type="number"
                 min="0"
@@ -1465,24 +1462,21 @@ export default function Home() {
                   updateMaxPrice(e.target.value, maxPriceUnit)
                 }
                 placeholder="Max"
-                className="w-14 min-w-0 rounded-xl border border-zinc-200 px-2 py-2 text-sm outline-none"
+                className="w-[84px] min-w-0 rounded-xl border border-zinc-200 py-2 pl-2.5 pr-8 text-sm outline-none"
               />
-
-              <div className="relative shrink-0">
-                <select
-                  value={maxPriceUnit}
-                  onChange={(e) =>
-                    updateMaxPrice(maxPriceText, e.target.value as PriceUnit)
-                  }
-                  className="w-[46px] appearance-none rounded-xl border border-zinc-200 bg-white py-2 pl-2 pr-3.5 text-[11px] font-semibold text-zinc-600 outline-none"
-                >
-                  <option value="lakh">Lakh</option>
-                  <option value="crore">Cr</option>
-                </select>
-                <span className="pointer-events-none absolute right-1 top-1/2 -translate-y-1/2 text-[8px] text-zinc-400">
-                  ▾
-                </span>
-              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  updateMaxPrice(
+                    maxPriceText,
+                    maxPriceUnit === "lakh" ? "crore" : "lakh"
+                  )
+                }
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600 transition hover:bg-zinc-200"
+                title="Tap to switch Lakh / Cr"
+              >
+                {maxPriceUnit === "lakh" ? "L" : "Cr"}
+              </button>
             </div>
 
 
