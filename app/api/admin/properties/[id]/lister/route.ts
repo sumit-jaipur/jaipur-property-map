@@ -49,11 +49,18 @@ export async function GET(
     );
   }
 
-  const { data: profile } = await supabaseAdmin
+  const { data: profile, error: profileError } = await supabaseAdmin
     .from("profiles")
     .select("phone, account_type")
     .eq("id", property.seller_id)
     .maybeSingle();
+
+  if (profileError) {
+    return NextResponse.json(
+      { error: "Failed to load lister profile: " + profileError.message },
+      { status: 500 }
+    );
+  }
 
   const { data: userResult, error: userError } =
     await supabaseAdmin.auth.admin.getUserById(property.seller_id);
