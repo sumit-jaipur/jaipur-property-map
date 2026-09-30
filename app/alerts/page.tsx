@@ -23,6 +23,8 @@ type AlertRow = {
   id: number;
   seen: boolean;
   created_at: string;
+  type: string;
+  message: string | null;
   properties: Property | null;
   saved_searches: SavedSearch | null;
 };
@@ -67,6 +69,8 @@ export default function AlertsPage() {
           id,
           seen,
           created_at,
+          type,
+          message,
           properties (
             id,
             title,
@@ -182,7 +186,8 @@ export default function AlertsPage() {
           </h1>
 
           <p className="mt-2 text-zinc-500">
-            New listings that match one of your saved searches.
+            New listings that match your saved searches, plus site visits
+            assigned to you if you&apos;re a broker or agent.
           </p>
         </div>
 
@@ -223,8 +228,64 @@ export default function AlertsPage() {
 
         <div className="space-y-4">
 
-          {alerts.map((alert) =>
-            alert.properties ? (
+          {alerts.map((alert) => {
+            if (alert.type === "broker_assignment") {
+              return (
+                <article
+                  key={alert.id}
+                  className="flex flex-col gap-4 rounded-3xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm sm:flex-row sm:items-center"
+                >
+
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-2xl sm:h-24 sm:w-24">
+                    🏡
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+
+                    <p className="text-xs font-bold uppercase tracking-wide text-blue-600">
+                      New site visit assigned
+                    </p>
+
+                    <p className="mt-1 text-base font-bold text-zinc-900">
+                      {alert.message || "You've been assigned a new lead."}
+                    </p>
+
+                    <p className="mt-1 text-sm text-zinc-500">
+                      {new Date(alert.created_at).toLocaleDateString(
+                        "en-IN",
+                        { day: "numeric", month: "short" }
+                      )}
+                    </p>
+
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-2">
+
+                    <Link
+                      href="/broker"
+                      className="rounded-xl bg-blue-600 px-4 py-2.5 text-center text-sm font-bold text-white transition hover:bg-blue-700"
+                    >
+                      View in My Visits
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => dismissAlert(alert.id)}
+                      disabled={dismissingId === alert.id}
+                      className="rounded-xl border border-zinc-200 px-3 py-2.5 text-sm font-semibold text-zinc-500 transition hover:bg-zinc-50 disabled:opacity-50"
+                    >
+                      {dismissingId === alert.id ? "..." : "Dismiss"}
+                    </button>
+
+                  </div>
+
+                </article>
+              );
+            }
+
+            if (!alert.properties) return null;
+
+            return (
               <article
                 key={alert.id}
                 className="flex flex-col gap-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center"
@@ -290,8 +351,8 @@ export default function AlertsPage() {
                 </div>
 
               </article>
-            ) : null
-          )}
+            );
+          })}
 
         </div>
 

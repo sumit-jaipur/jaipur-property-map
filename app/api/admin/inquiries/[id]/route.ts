@@ -20,6 +20,12 @@ const VALID_STATUSES = [
 // no client-side UPDATE policy broad enough for an admin to edit another
 // user's inquiry row directly (see the inquiries-sales-pipeline
 // migration).
+//
+// When this call actually assigns (or re-assigns) the lead to someone
+// new, it also drops a row into `search_alerts` so the broker sees it in
+// their own 🔔 Alerts inbox/bell badge -- the same inbox saved-search
+// matches use, see search-alerts-broker-notification-migration.sql.
+// Before this, a broker only found out by manually opening /broker.
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -55,6 +61,23 @@ export async function PATCH(
     );
   }
 
+  // Load who this lead was assigned to BEFORE this update -- needed to
+  // tell a genuinely new assignment apart from an admin just re-saving
+  // status/notes on an already-assigned lead (which must NOT re-notify
+  // the broker every time), and to build a readable notification message.
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from("inquiries")
+    .select("assigned_to, property_id, contact_name")
+    .eq("id", inquiryId)
+    .single();
+
+  if (existingError || !existing) {
+    return NextResponse.json(
+      { error: "Inquiry not found." },
+      { status: 404 }
+    );
+  }
+
   const update: {
     status?: string;
     assigned_to?: string | null;
@@ -87,6 +110,49 @@ export async function PATCH(
       { error: "Failed to update inquiry: " + error.message },
       { status: 500 }
     );
+  }
+
+  const isNewAssignment =
+    body.assignedTo !== undefined &&
+    Boolean(body.assignedTo) &&
+    body.assignedTo !== existing.assigned_to;
+
+  if (isNewAssignment) {
+    let leadLabel = existing.contact_name
+      ? `lead from ${existing.contact_name}`
+      : "a lead";
+
+    if (existing.property_id) {
+      const { data: property } = await supabaseAdmin
+        .from("properties")
+        .select("title")
+        .eq("id", existing.property_id)
+        .single();
+
+      if (property?.title) {
+        leadLabel = property.title;
+      }
+    }
+
+    // Don't let a notification failure undo an otherwise-successful
+    // assignment -- the broker can still find the lead on /broker (My
+    // Visits) even without the bell alert, so this is logged, not thrown.
+    const { error: alertError } = await supabaseAdmin
+      .from("search_alerts")
+      .insert({
+        type: "broker_assignment",
+        user_id: body.assignedTo,
+        inquiry_id: inquiryId,
+        property_id: existing.property_id ?? null,
+        message: `You've been assigned a new site visit: ${leadLabel}`,
+      });
+
+    if (alertError) {
+      console.error(
+        "Failed to create broker-assignment alert:",
+        alertError.message
+      );
+    }
   }
 
   return NextResponse.json({ success: true });
