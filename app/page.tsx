@@ -1758,7 +1758,16 @@ export default function Home() {
         <section
           ref={sheetRef}
           className={`order-1 fixed inset-x-0 bottom-0 z-10 overflow-y-auto overscroll-contain rounded-t-3xl border-t border-zinc-200 bg-zinc-50 shadow-[0_-12px_30px_-6px_rgba(0,0,0,0.25)] transition-[top] duration-300 ease-out ${
-            sheetExpanded ? "top-[8vh]" : "top-[82vh]"
+            // 8vh used to put the expanded sheet's top edge right at the
+            // bottom of the sticky header, so it covered the property-type
+            // filter row (All / Villa / Apartment / Plot / Commercial)
+            // underneath. 148px clears the header (~64px) plus that filter
+            // row (~64px) on mobile, leaving a small gap so the chips stay
+            // visible and tappable even with the list fully expanded; the
+            // collapsed peek (82vh) and the drag-to-collapse gesture are
+            // unchanged, so a full swipe/tap down still closes it all the
+            // way.
+            sheetExpanded ? "top-[148px]" : "top-[82vh]"
           } lg:static lg:inset-auto lg:top-auto lg:z-auto lg:h-auto lg:overscroll-auto lg:rounded-none lg:border-t-0 lg:border-r lg:shadow-none lg:transition-none`}
         >
 
