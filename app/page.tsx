@@ -1757,7 +1757,7 @@ export default function Home() {
 
         <section
           ref={sheetRef}
-          className={`order-1 fixed inset-x-0 bottom-0 z-10 overflow-y-auto overscroll-contain rounded-t-3xl border-t border-zinc-200 bg-zinc-50 shadow-[0_-12px_30px_-6px_rgba(0,0,0,0.25)] transition-[top] duration-300 ease-out ${
+          className={`order-1 fixed inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden rounded-t-3xl border-t border-zinc-200 bg-zinc-50 shadow-[0_-12px_30px_-6px_rgba(0,0,0,0.25)] transition-[top] duration-300 ease-out ${
             // 8vh used to put the expanded sheet's top edge right at the
             // bottom of the sticky header, so it covered the property-type
             // filter row (All / Villa / Apartment / Plot / Commercial)
@@ -1768,7 +1768,7 @@ export default function Home() {
             // unchanged, so a full swipe/tap down still closes it all the
             // way.
             sheetExpanded ? "top-[148px]" : "top-[82vh]"
-          } lg:static lg:inset-auto lg:top-auto lg:z-auto lg:h-auto lg:overscroll-auto lg:rounded-none lg:border-t-0 lg:border-r lg:shadow-none lg:transition-none`}
+          } lg:static lg:inset-auto lg:top-auto lg:z-auto lg:block lg:h-auto lg:overflow-y-auto lg:rounded-none lg:border-t-0 lg:border-r lg:shadow-none lg:transition-none`}
         >
 
           <div
@@ -1777,7 +1777,7 @@ export default function Home() {
             }
             onTouchStart={handleSheetDragStart}
             onTouchEnd={handleSheetDragEnd}
-            className="sticky top-0 z-10 touch-none select-none border-b border-zinc-200 bg-zinc-50/95 backdrop-blur lg:touch-auto"
+            className="sticky top-0 z-10 shrink-0 touch-none select-none border-b border-zinc-200 bg-zinc-50/95 backdrop-blur lg:touch-auto"
           >
 
             <div className="flex justify-center pt-2.5 pb-1 lg:hidden">
@@ -1812,6 +1812,21 @@ export default function Home() {
 
           </div>
 
+          {/* SCROLLABLE BODY -- the drag handle/title bar above used to be
+              "sticky top-0" inside this same scrolling element, which was
+              supposed to stay pinned while the list underneath scrolled.
+              In practice that meant once someone scrolled down into the
+              34 listings, the handle they'd need to grab to collapse the
+              sheet again could end up unreliable to find. Pulling the
+              scrollable content (locality links + the cards) out into its
+              own flex-1 wrapper, with the handle/title as a plain
+              non-scrolling sibling above it, makes the handle structurally
+              impossible to scroll away -- it's just not part of the thing
+              that scrolls. `lg:contents` drops this wrapper out of the
+              desktop layout entirely so the two-column grid view (which
+              already scrolled the whole section) is unaffected. */}
+
+          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain lg:contents">
 
           {/* EXPLORE BY LOCALITY -- links to the per-area guide pages at
               /locality/[slug]. These pages already existed (price bands,
@@ -2093,6 +2108,8 @@ export default function Home() {
                 );
               }
             )}
+
+          </div>
 
           </div>
 
