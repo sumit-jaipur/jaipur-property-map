@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
-import LocationPicker from "../components/LocationPicker";
+import LocationPicker, {
+  LocationSource,
+} from "../components/LocationPicker";
 import PriceInput, {
   PriceUnit,
   priceUnitToRupees,
@@ -56,6 +58,13 @@ export default function AddPropertyPage() {
   // separate from `form` since it needs its own two-part change handler.
   const [priceValue, setPriceValue] = useState("");
   const [priceUnit, setPriceUnit] = useState<PriceUnit>("lakh");
+
+  // Null until the seller actually places a pin -- there's no meaningful
+  // default source for a listing nobody has located yet, and the submit
+  // handler already requires lat/lng to be set before this matters.
+  const [locationSource, setLocationSource] = useState<LocationSource | null>(
+    null
+  );
 
   useEffect(() => {
     async function checkAuth() {
@@ -283,6 +292,7 @@ export default function AddPropertyPage() {
         road: form.road.trim(),
         lat: latNumber,
         lng: lngNumber,
+        location_source: locationSource || "map_click",
         image: coverImage,
         video_url: videoUrl,
         status: "Available",
@@ -603,9 +613,10 @@ export default function AddPropertyPage() {
               <LocationPicker
                 lat={form.lat}
                 lng={form.lng}
-                onChange={(lat, lng) =>
-                  setForm((f) => ({ ...f, lat, lng }))
-                }
+                onChange={(lat, lng, source) => {
+                  setForm((f) => ({ ...f, lat, lng }));
+                  if (source) setLocationSource(source);
+                }}
               />
 
             </section>

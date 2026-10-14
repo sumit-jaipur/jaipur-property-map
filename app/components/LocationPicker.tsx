@@ -11,11 +11,71 @@ const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 const JAIPUR_LNG = 75.7873;
 const JAIPUR_LAT = 26.9124;
 
+// Where a pin's coordinates came from -- shown to the admin reviewing the
+// listing so a pasted link (which nobody has necessarily stood at) gets a
+// second look, the same way every other listing already does before it
+// goes live.
+export type LocationSource = "map_click" | "search" | "gps" | "pasted_link";
+
 type Props = {
   lat: string;
   lng: string;
-  onChange: (lat: string, lng: string) => void;
+  onChange: (lat: string, lng: string, source?: LocationSource) => void;
 };
+
+// Pulls lat/lng out of a Google Maps or Apple Maps URL that already has
+// them in its query string or path -- covers the common
+// "https://www.google.com/maps/place/.../@26.9124,75.7873,15z" and
+// "?q=26.9124,75.7873" / "ll=26.9124,75.7873" shapes. A *shortened* link
+// (maps.app.goo.gl, goo.gl/maps, g.co, Apple's maps.apple.com/p/...) never
+// has coordinates in the URL itself -- resolveLocationLink below handles
+// those by asking the server to follow the redirect first.
+function extractCoordsFromUrl(url: string): { lat: number; lng: number } | null {
+  const patterns = [
+    /[@,]\s*(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/, // .../@26.9124,75.7873,15z
+    /[?&]q=(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/, // ?q=26.9124,75.7873
+    /[?&]ll=(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/, // ?ll=26.9124,75.7873 (Apple Maps)
+    /[?&]daddr=(-?\d{1,2}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)/, // ?daddr=26.9124,75.7873
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) {
+      const lat = Number(match[1]);
+      const lng = Number(match[2]);
+      if (isValidCoordinate(lat, lng)) return { lat, lng };
+    }
+  }
+
+  return null;
+}
+
+function isValidCoordinate(lat: number, lng: number): boolean {
+  return (
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
+// Plain pasted coordinates, e.g. "26.9124, 75.7873" or "Lat 26.9124 Lng
+// 75.7873" -- deliberately loose about the surrounding text (that's
+// exactly what gets pasted from a WhatsApp message or a notes app) but
+// strict about requiring exactly two decimal numbers so it doesn't
+// misread a URL's zoom level or a street number as a coordinate.
+function extractPlainCoordinates(text: string): { lat: number; lng: number } | null {
+  const numbers = text.match(/-?\d{1,3}\.\d+/g);
+  if (!numbers || numbers.length !== 2) return null;
+
+  const lat = Number(numbers[0]);
+  const lng = Number(numbers[1]);
+  if (!isValidCoordinate(lat, lng)) return null;
+
+  return { lat, lng };
+}
 
 // Search Box API's /suggest step returns a name/id, not coordinates --
 // /retrieve is a second call that resolves those once something is
@@ -38,6 +98,11 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
   const [locating, setLocating] = useState(false);
   const [locateError, setLocateError] = useState("");
   const [isIOS, setIsIOS] = useState(false);
+
+  const [showPasteBox, setShowPasteBox] = useState(false);
+  const [pasteText, setPasteText] = useState("");
+  const [pasting, setPasting] = useState(false);
+  const [pasteError, setPasteError] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
@@ -161,7 +226,7 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
 
       const [lngVal, latVal] = coordinates;
 
-      onChange(latVal.toFixed(6), lngVal.toFixed(6));
+      onChange(latVal.toFixed(6), lngVal.toFixed(6), "search");
       flyTo(latVal, lngVal);
     } finally {
       // The session ends once a place is picked -- the next search
@@ -170,11 +235,94 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
     }
   }
 
+  // Lets a broker use a location shared with them (over WhatsApp, say) for
+  // a property they haven't physically visited yet, instead of requiring
+  // "Use my current location" to always mean they're standing there right
+  // now. Plain coordinates and a full Google/Apple Maps link (one that
+  // already has the coordinates in its URL) resolve instantly in the
+  // browser; a shortened share link (maps.app.goo.gl, goo.gl/maps, g.co,
+  // maps.apple.com/p/...) doesn't carry coordinates in the URL at all --
+  // it only reveals them after the redirect, which the browser's own
+  // fetch can't follow cross-origin, so that case asks the server route
+  // below to resolve it instead. Either way the pin that results is still
+  // just a starting point: it's shown as draggable, same as always, so it
+  // can be nudged onto the exact spot before saving, and it's tagged
+  // "pasted_link" so the admin review screen knows to double-check it.
+  async function handlePasteLocation() {
+    const text = pasteText.trim();
+
+    if (!text) return;
+
+    setPasting(true);
+    setPasteError("");
+
+    try {
+      if (/^https?:\/\//i.test(text)) {
+        const direct = extractCoordsFromUrl(text);
+
+        if (direct) {
+          onChange(direct.lat.toFixed(6), direct.lng.toFixed(6), "pasted_link");
+          flyTo(direct.lat, direct.lng);
+          setShowPasteBox(false);
+          setPasteText("");
+          return;
+        }
+
+        // No coordinates in the URL itself -- most likely a shortened
+        // share link. Ask the server to follow the redirect.
+        const res = await fetch("/api/resolve-location-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: text }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok || !isValidCoordinate(data.lat, data.lng)) {
+          setPasteError(
+            data.error ||
+              "Couldn't find a location in that link. Open it, make sure it shows a specific pin (not just an area), and paste the address-bar URL, or search/drop a pin manually instead."
+          );
+          return;
+        }
+
+        onChange(
+          Number(data.lat).toFixed(6),
+          Number(data.lng).toFixed(6),
+          "pasted_link"
+        );
+        flyTo(data.lat, data.lng);
+        setShowPasteBox(false);
+        setPasteText("");
+        return;
+      }
+
+      const plain = extractPlainCoordinates(text);
+
+      if (!plain) {
+        setPasteError(
+          "Couldn't read that as a location. Paste a Google Maps or Apple Maps link, or coordinates like 26.9124, 75.7873."
+        );
+        return;
+      }
+
+      onChange(plain.lat.toFixed(6), plain.lng.toFixed(6), "pasted_link");
+      flyTo(plain.lat, plain.lng);
+      setShowPasteBox(false);
+      setPasteText("");
+    } catch {
+      setPasteError("Something went wrong reading that. Please try again.");
+    } finally {
+      setPasting(false);
+    }
+  }
+
   const handleMapClick = useCallback(
     (e: any) => {
       onChange(
         e.lngLat.lat.toFixed(6),
-        e.lngLat.lng.toFixed(6)
+        e.lngLat.lng.toFixed(6),
+        "map_click"
       );
     },
     [onChange]
@@ -205,7 +353,7 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
       (pos) => {
         const { latitude, longitude } = pos.coords;
 
-        onChange(latitude.toFixed(6), longitude.toFixed(6));
+        onChange(latitude.toFixed(6), longitude.toFixed(6), "gps");
         flyTo(latitude, longitude);
         setLocating(false);
       },
@@ -338,7 +486,8 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
               onDragEnd={(e) =>
                 onChange(
                   e.lngLat.lat.toFixed(6),
-                  e.lngLat.lng.toFixed(6)
+                  e.lngLat.lng.toFixed(6),
+                  "map_click"
                 )
               }
             >
@@ -359,17 +508,76 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
             : "Search an address above, or click anywhere on the map to drop a pin"}
         </p>
 
-        <button
-          type="button"
-          onClick={useCurrentLocation}
-          disabled={locating}
-          className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-200 disabled:opacity-50"
-        >
-          {locating
-            ? "Locating..."
-            : "📍 Use my current location"}
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={useCurrentLocation}
+            disabled={locating}
+            className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-200 disabled:opacity-50"
+          >
+            {locating
+              ? "Locating..."
+              : "📍 Use my current location"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setShowPasteBox((current) => !current);
+              setPasteError("");
+            }}
+            className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-200"
+          >
+            📎 Paste a shared location
+          </button>
+        </div>
       </div>
+
+      {showPasteBox && (
+        <div className="mt-3 rounded-xl border border-zinc-200 bg-zinc-50 p-3">
+          <p className="mb-2 text-xs text-zinc-500">
+            Not there in person yet? Paste a Google Maps or Apple Maps link
+            someone sent you (WhatsApp included), or just the coordinates.
+            You can still drag the pin to fine-tune it afterwards, and it
+            goes through the same review as every other listing before it
+            goes live.
+          </p>
+
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <input
+              type="text"
+              value={pasteText}
+              onChange={(e) => {
+                setPasteText(e.target.value);
+                setPasteError("");
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  handlePasteLocation();
+                }
+              }}
+              placeholder="https://maps.app.goo.gl/... or 26.9124, 75.7873"
+              className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-red-400 focus:ring-4 focus:ring-red-50"
+            />
+
+            <button
+              type="button"
+              onClick={handlePasteLocation}
+              disabled={pasting || !pasteText.trim()}
+              className="shrink-0 rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+            >
+              {pasting ? "Reading..." : "Use this location"}
+            </button>
+          </div>
+
+          {pasteError && (
+            <p className="mt-2 text-xs font-semibold text-red-600">
+              {pasteError}
+            </p>
+          )}
+        </div>
+      )}
 
       {isIOS && !locateError && (
         <p className="mt-2 text-[11px] text-zinc-400">

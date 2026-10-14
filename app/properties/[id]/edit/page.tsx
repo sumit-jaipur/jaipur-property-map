@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { supabase } from "../../../lib/supabaseClient";
-import LocationPicker from "../../../components/LocationPicker";
+import LocationPicker, {
+  LocationSource,
+} from "../../../components/LocationPicker";
 import PriceInput, {
   PriceUnit,
   priceUnitToRupees,
@@ -68,6 +70,13 @@ export default function EditPropertyPage() {
   const [priceValue, setPriceValue] = useState("");
   const [priceUnit, setPriceUnit] = useState<PriceUnit>("lakh");
 
+  // Starts as whatever's already saved for this listing; only changes if
+  // the pin is actually moved during this edit (see LocationPicker's
+  // onChange below).
+  const [locationSource, setLocationSource] = useState<LocationSource | null>(
+    null
+  );
+
   useEffect(() => {
     async function loadProperty() {
       const {
@@ -106,6 +115,8 @@ export default function EditPropertyPage() {
         lng: String(data.lng ?? ""),
         status: data.status ?? "Available",
       });
+
+      setLocationSource((data.location_source as LocationSource) ?? null);
 
       const savedPrice = rupeesToPriceUnit(Number(data.price) || 0);
       setPriceValue(savedPrice.valueText);
@@ -357,6 +368,7 @@ export default function EditPropertyPage() {
         road: form.road.trim(),
         lat: latNumber,
         lng: lngNumber,
+        location_source: locationSource || "map_click",
         image: coverImage,
         video_url: videoUrl,
         status: form.status,
@@ -699,9 +711,10 @@ export default function EditPropertyPage() {
               <LocationPicker
                 lat={form.lat}
                 lng={form.lng}
-                onChange={(lat, lng) =>
-                  setForm((f) => ({ ...f, lat, lng }))
-                }
+                onChange={(lat, lng, source) => {
+                  setForm((f) => ({ ...f, lat, lng }));
+                  if (source) setLocationSource(source);
+                }}
               />
 
             </section>

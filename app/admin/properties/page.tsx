@@ -19,6 +19,7 @@ type Property = {
   status: string;
   verification_status: "pending" | "approved" | "rejected";
   is_featured: boolean;
+  location_source: "map_click" | "search" | "gps" | "pasted_link" | null;
 };
 
 // Everything beyond the summary card -- fetched only once an admin
@@ -114,7 +115,7 @@ export default function AdminPropertiesPage() {
       const { data, error } = await supabase
         .from("properties")
         .select(
-          "id, title, type, price, area, image, status, verification_status, is_featured"
+          "id, title, type, price, area, image, status, verification_status, is_featured, location_source"
         )
         .order("id", { ascending: false });
 
@@ -543,6 +544,15 @@ export default function AdminPropertiesPage() {
                       >
                         {property.verification_status}
                       </span>
+
+                      {property.location_source === "pasted_link" && (
+                        <span
+                          title="The seller/broker pasted a shared location link instead of placing the pin themselves -- worth double-checking it lands on the right building before approving."
+                          className="w-fit rounded-full bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700"
+                        >
+                          📎 Pin from pasted link
+                        </span>
+                      )}
 
                     </div>
 

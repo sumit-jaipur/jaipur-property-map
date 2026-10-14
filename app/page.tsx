@@ -1190,7 +1190,7 @@ export default function Home() {
 
       <header className="sticky top-0 z-50 bg-header-bg text-header-fg shadow-md">
 
-        <div className="mx-auto flex max-w-[1600px] items-center gap-4 px-4 py-3 lg:px-6">
+        <div className="mx-auto flex max-w-[1600px] items-center gap-4 px-4 py-2 lg:px-6 lg:py-3">
 
           <Link
             href="/"
@@ -1201,7 +1201,7 @@ export default function Home() {
               <img
                 src="/logo.png"
                 alt="99Bricks"
-                className="h-10 w-10 shrink-0 rounded-full object-cover shadow-md"
+                className="h-9 w-9 shrink-0 rounded-full object-cover shadow-md sm:h-10 sm:w-10"
               />
 
               <div className="hidden sm:block">
@@ -1367,7 +1367,7 @@ export default function Home() {
 
       <div className="relative z-20 border-b border-zinc-200 bg-white">
 
-        <div className="mx-auto max-w-[1600px] px-4 py-3 lg:px-6">
+        <div className="mx-auto max-w-[1600px] px-4 py-2 lg:px-6 lg:py-3">
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
 
@@ -1758,16 +1758,26 @@ export default function Home() {
         <section
           ref={sheetRef}
           className={`order-1 fixed inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden rounded-t-3xl border-t border-zinc-200 bg-zinc-50 shadow-[0_-12px_30px_-6px_rgba(0,0,0,0.25)] transition-[top] duration-300 ease-out ${
-            // 8vh used to put the expanded sheet's top edge right at the
-            // bottom of the sticky header, so it covered the property-type
-            // filter row (All / Villa / Apartment / Plot / Commercial)
-            // underneath. 148px clears the header (~64px) plus that filter
-            // row (~64px) on mobile, leaving a small gap so the chips stay
-            // visible and tappable even with the list fully expanded; the
-            // collapsed peek (82vh) and the drag-to-collapse gesture are
-            // unchanged, so a full swipe/tap down still closes it all the
-            // way.
-            sheetExpanded ? "top-[148px]" : "top-[82vh]"
+            // 132px clears the header (now ~56px after trimming its mobile
+            // padding/logo size) plus the filter row (now ~48px) on mobile,
+            // leaving a small gap so the chips stay visible and tappable
+            // even with the list fully expanded.
+            //
+            // Collapsed peek: a fixed 128px (not a vh percentage) so the
+            // map gets more of the screen on tall phones instead of giving
+            // up a constant 18% of height to the peek strip regardless of
+            // device -- 128px is just enough to show the peek's own title
+            // block ("Jaipur Properties" / count / drag handle) with a
+            // little headroom. Built on 100dvh, not 100vh, so it tracks the
+            // browser's actual visible viewport as the address bar
+            // shows/hides on scroll (both iOS Safari and Android Chrome
+            // resize their on-screen chrome this way) instead of jumping
+            // once the static 100vh figure goes stale -- this is the fix
+            // for both platforms at once, not a separate iOS/Android
+            // tweak.
+            sheetExpanded
+              ? "top-[132px]"
+              : "top-[calc(100dvh-128px)]"
           } lg:static lg:inset-auto lg:top-auto lg:z-auto lg:block lg:h-auto lg:overflow-y-auto lg:rounded-none lg:border-t-0 lg:border-r lg:shadow-none lg:transition-none`}
         >
 
