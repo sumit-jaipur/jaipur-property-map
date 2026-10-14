@@ -28,6 +28,7 @@ export default function PropertyPage() {
   const router = useRouter();
 
   const [property, setProperty] = useState<any>(null);
+  const [loadError, setLoadError] = useState(false);
   const [listerTypeLabel, setListerTypeLabel] = useState<string | null>(
     null
   );
@@ -119,6 +120,13 @@ export default function PropertyPage() {
         }
 
         setActiveIndex(0);
+      } else {
+        // Bad/removed id, or (once RLS is enabled on properties) a row
+        // the viewer isn't allowed to see -- either way, stop at "not
+        // found" instead of leaving the page stuck on "Loading..."
+        // forever (that used to happen for any dead or shared-then-
+        // removed link).
+        setLoadError(true);
       }
     }
 
@@ -210,7 +218,47 @@ export default function PropertyPage() {
   }
 
   if (!property) {
+    if (loadError) {
+      return (
+        <div className="p-10 text-center">
+          <p className="text-lg font-semibold">Listing not found</p>
+          <p className="mt-2 text-sm text-zinc-500">
+            This property may have been removed, or the link is incorrect.
+          </p>
+          <Link href="/" className="mt-4 inline-block text-accent underline">
+            Back to map
+          </Link>
+        </div>
+      );
+    }
     return <div className="p-10">Loading...</div>;
+  }
+
+  // Belt-and-suspenders: don't show a pending/rejected listing to anyone
+  // except the seller who owns it. Once properties-rls-migration.sql is
+  // run, the database enforces this directly (this query simply won't
+  // return the row for anyone else) -- this check just makes sure the
+  // page shows a clean "not found" instead of relying on that alone,
+  // and keeps working the same either way.
+  const isOwnListing = Boolean(
+    authUser && property.seller_id && authUser.id === property.seller_id
+  );
+
+  if (property.verification_status !== "approved" && !isOwnListing) {
+    if (!authChecked) {
+      return <div className="p-10">Loading...</div>;
+    }
+    return (
+      <div className="p-10 text-center">
+        <p className="text-lg font-semibold">Listing not found</p>
+        <p className="mt-2 text-sm text-zinc-500">
+          This property isn&apos;t publicly available yet.
+        </p>
+        <Link href="/" className="mt-4 inline-block text-accent underline">
+          Back to map
+        </Link>
+      </div>
+    );
   }
 
   const pageUrl =

@@ -170,6 +170,34 @@ export default function AddPropertyPage() {
       return;
     }
 
+    // priceUnitToRupees silently returns 0 for a negative or otherwise
+    // invalid amount (it has no other way to signal "bad input"), so a
+    // typed "-5" would previously sail through and save as a ₹0
+    // listing with no error shown. Catch that here instead.
+    const priceRupees = priceUnitToRupees(priceValue, priceUnit);
+
+    if (priceRupees <= 0) {
+      setError("Please enter a valid price greater than zero.");
+      return;
+    }
+
+    const latNumber = Number(form.lat);
+    const lngNumber = Number(form.lng);
+
+    if (
+      !Number.isFinite(latNumber) ||
+      !Number.isFinite(lngNumber) ||
+      latNumber < -90 ||
+      latNumber > 90 ||
+      lngNumber < -180 ||
+      lngNumber > 180
+    ) {
+      setError(
+        "Latitude/Longitude look invalid -- please pick the location on the map again."
+      );
+      return;
+    }
+
     if (imageFiles.length > MAX_PHOTOS) {
       setError(`You can upload up to ${MAX_PHOTOS} photos.`);
       return;
@@ -247,14 +275,14 @@ export default function AddPropertyPage() {
         seller_id: user.id,
         title: form.title.trim(),
         type: form.type,
-        price: priceUnitToRupees(priceValue, priceUnit),
+        price: priceRupees,
         bhk: Number(form.bhk) || 0,
         area: form.area.trim(),
         facing: form.facing,
         parking: form.parking.trim() || "-",
         road: form.road.trim(),
-        lat: Number(form.lat),
-        lng: Number(form.lng),
+        lat: latNumber,
+        lng: lngNumber,
         image: coverImage,
         video_url: videoUrl,
         status: "Available",

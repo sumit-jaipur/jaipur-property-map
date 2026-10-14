@@ -48,9 +48,15 @@ export default function LocalityPage() {
     async function loadProperties() {
       setLoading(true);
 
+      // Same rule the homepage map/list uses: only approved, still-
+      // available listings are public. Without this, a locality guide
+      // page would mix in pending/rejected/sold listings with no way
+      // for a visitor to tell the difference.
       const { data, error } = await supabase
         .from("properties")
         .select("*")
+        .eq("verification_status", "approved")
+        .eq("status", "Available")
         .or(
           `title.ilike.%${locality!.name}%,road.ilike.%${locality!.name}%`
         )

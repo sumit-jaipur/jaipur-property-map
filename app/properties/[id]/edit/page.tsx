@@ -237,6 +237,34 @@ export default function EditPropertyPage() {
       return;
     }
 
+    // Same validation as Add Property -- priceUnitToRupees silently
+    // returns 0 for a negative/invalid amount instead of signalling an
+    // error, so catch that here, and reject non-finite/out-of-range
+    // coordinates before they get saved.
+    const priceRupees = priceUnitToRupees(priceValue, priceUnit);
+
+    if (priceRupees <= 0) {
+      setError("Please enter a valid price greater than zero.");
+      return;
+    }
+
+    const latNumber = Number(form.lat);
+    const lngNumber = Number(form.lng);
+
+    if (
+      !Number.isFinite(latNumber) ||
+      !Number.isFinite(lngNumber) ||
+      latNumber < -90 ||
+      latNumber > 90 ||
+      lngNumber < -180 ||
+      lngNumber > 180
+    ) {
+      setError(
+        "Latitude/Longitude look invalid -- please pick the location on the map again."
+      );
+      return;
+    }
+
     if (totalPhotoCount > MAX_PHOTOS) {
       setError(`You can have up to ${MAX_PHOTOS} photos.`);
       return;
@@ -321,14 +349,14 @@ export default function EditPropertyPage() {
       .update({
         title: form.title.trim(),
         type: form.type,
-        price: priceUnitToRupees(priceValue, priceUnit),
+        price: priceRupees,
         bhk: Number(form.bhk) || 0,
         area: form.area.trim(),
         facing: form.facing,
         parking: form.parking.trim() || "-",
         road: form.road.trim(),
-        lat: Number(form.lat),
-        lng: Number(form.lng),
+        lat: latNumber,
+        lng: lngNumber,
         image: coverImage,
         video_url: videoUrl,
         status: form.status,
@@ -363,7 +391,22 @@ export default function EditPropertyPage() {
         );
 
       if (mediaError) {
+        // The listing's own fields already saved fine above, but the
+        // gallery table was cleared and the re-insert just failed --
+        // without this, the seller would be silently redirected to
+        // My Properties believing everything saved while every photo
+        // is now gone. Surface it and stay on the page instead: the
+        // kept/new photo state here is untouched, so pressing Save
+        // again retries just the gallery write and recovers cleanly.
         console.error("Failed to save photo gallery:", mediaError);
+        setSaving(false);
+        setUploadProgress("");
+        setError(
+          "Listing details saved, but the photo gallery failed to update (" +
+            mediaError.message +
+            "). Please press Save again to retry just the photos."
+        );
+        return;
       }
     }
 

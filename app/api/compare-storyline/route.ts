@@ -11,8 +11,13 @@ import {
 // Public, consumer-facing endpoint (no admin auth) -- called automatically
 // as soon as the /compare page loads 2+ properties, before the buyer types
 // anything. Writes a short neutral narrative describing how the compared
-// properties differ. Uses the service-role client only to read properties
-// (properties has no RLS policies yet), never to write anything.
+// properties differ. Uses the service-role client only to read properties,
+// never to write anything.
+//
+// SECURITY: explicitly restricted to approved listings below -- see the
+// matching note in app/api/compare-advisor/route.ts. Without this filter
+// this route would hand back full details of a not-yet-public listing to
+// anyone who guesses its id.
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const propertyIds: number[] = Array.isArray(body?.propertyIds)
@@ -29,7 +34,8 @@ export async function POST(request: NextRequest) {
   const { data: properties, error: propertiesError } = await supabaseAdmin
     .from("properties")
     .select("id, title, type, price, bhk, area, facing, parking, road")
-    .in("id", propertyIds);
+    .in("id", propertyIds)
+    .eq("verification_status", "approved");
 
   if (propertiesError) {
     return NextResponse.json(

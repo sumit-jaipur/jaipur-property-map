@@ -9,7 +9,7 @@ import { ACCOUNT_TYPES, type AccountType } from "../lib/accountTypes";
 export default function AuthPage() {
   const router = useRouter();
 
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [phone, setPhone] = useState("");
@@ -85,6 +85,19 @@ export default function AuthPage() {
 
         if (profileError) {
           console.error(profileError);
+          setLoading(false);
+          // The login itself was created (data.user exists), but the
+          // account type / phone number did not save -- being honest
+          // about that here matters because there is no self-service
+          // "edit profile" screen yet to fix it later, so silently
+          // saying "Account created" would leave them thinking
+          // everything worked when their phone number -- the thing the
+          // Sales team's cold-call list depends on -- is actually
+          // missing.
+          setMessage(
+            "Account created, but we couldn't save your phone number / account type. Please contact support so we can add these manually."
+          );
+          return;
         }
       }
 
@@ -94,6 +107,41 @@ export default function AuthPage() {
         "Account created. Check your email if Supabase asks you to confirm your account."
       );
     }
+  }
+
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault();
+
+    setError("");
+    setMessage("");
+
+    if (!email.trim()) {
+      setError("Enter the email address on your account first.");
+      return;
+    }
+
+    setLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(
+      email.trim(),
+      {
+        redirectTo:
+          typeof window !== "undefined"
+            ? `${window.location.origin}/auth/reset-password`
+            : undefined,
+      }
+    );
+
+    setLoading(false);
+
+    if (error) {
+      setError(error.message);
+      return;
+    }
+
+    setMessage(
+      "If an account exists for that email, a password reset link has been sent. Check your inbox."
+    );
   }
 
   return (
@@ -120,6 +168,8 @@ export default function AuthPage() {
         <p className="text-sm text-zinc-500 mt-1 mb-6">
           {mode === "signin"
             ? "Sign in to your account"
+            : mode === "forgot"
+            ? "Reset your password"
             : "Create your account"}
         </p>
 
@@ -135,7 +185,10 @@ export default function AuthPage() {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={mode === "forgot" ? handleForgotPassword : handleSubmit}
+          className="space-y-4"
+        >
           <div>
             <label className="block text-sm text-zinc-700 mb-1">
               Email
@@ -151,21 +204,38 @@ export default function AuthPage() {
             />
           </div>
 
-          <div>
-            <label className="block text-sm text-zinc-700 mb-1">
-              Password
-            </label>
+          {mode !== "forgot" && (
+            <div>
+              <div className="flex items-center justify-between">
+                <label className="block text-sm text-zinc-700 mb-1">
+                  Password
+                </label>
+                {mode === "signin" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode("forgot");
+                      setError("");
+                      setMessage("");
+                    }}
+                    className="text-xs font-semibold text-red-600 hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                )}
+              </div>
 
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              placeholder="Minimum 6 characters"
-              className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-zinc-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
-            />
-          </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                placeholder="Minimum 6 characters"
+                className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-zinc-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              />
+            </div>
+          )}
 
           {mode === "signup" && (
             <div>
@@ -264,6 +334,8 @@ export default function AuthPage() {
               ? "Please wait..."
               : mode === "signin"
               ? "Sign In"
+              : mode === "forgot"
+              ? "Send Reset Link"
               : "Create Account"}
           </button>
         </form>
@@ -281,6 +353,20 @@ export default function AuthPage() {
                 className="text-red-600 font-semibold"
               >
                 Sign Up
+              </button>
+            </>
+          ) : mode === "forgot" ? (
+            <>
+              Remembered it?{" "}
+              <button
+                onClick={() => {
+                  setMode("signin");
+                  setError("");
+                  setMessage("");
+                }}
+                className="text-red-600 font-semibold"
+              >
+                Sign In
               </button>
             </>
           ) : (

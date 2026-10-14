@@ -181,10 +181,15 @@ function ComparePageInner() {
         return;
       }
 
+      // Only approved listings are meant to be publicly comparable --
+      // same fix as /api/compare-advisor and /api/compare-storyline.
+      // Without this, anyone could put a pending/rejected property's id
+      // in the URL and see its full details here.
       const { data, error } = await supabase
         .from("properties")
         .select("*")
-        .in("id", ids);
+        .in("id", ids)
+        .eq("verification_status", "approved");
 
       if (!error && data) {
         const ordered = ids

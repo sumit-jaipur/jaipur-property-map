@@ -12,8 +12,13 @@ import {
 // page. The buyer says what matters most to them and Gemini picks the
 // single best fit out of ONLY the specific properties they're comparing,
 // with a short trade-off note for each of the others. Uses the
-// service-role client only to read properties (properties has no RLS
-// policies yet), never to write anything.
+// service-role client only to read properties, never to write anything.
+//
+// SECURITY: explicitly restricted to approved listings below. Without that
+// filter, anyone could pass an arbitrary property id (no login needed) and
+// get back full price/BHK/facing/parking/road details of a listing that
+// isn't public yet (pending or rejected) -- the compare feature has no
+// legitimate need to see those, so the fix is to just not fetch them.
 export async function POST(request: NextRequest) {
   const body = await request.json().catch(() => null);
   const message = typeof body?.message === "string" ? body.message.trim() : "";
@@ -40,7 +45,8 @@ export async function POST(request: NextRequest) {
     .select(
       "id, title, type, price, bhk, area, facing, parking, road, verification_status"
     )
-    .in("id", propertyIds);
+    .in("id", propertyIds)
+    .eq("verification_status", "approved");
 
   if (propertiesError) {
     return NextResponse.json(
