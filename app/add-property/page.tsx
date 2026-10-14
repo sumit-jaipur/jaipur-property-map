@@ -338,9 +338,9 @@ export default function AddPropertyPage() {
 
   if (checkingAuth) {
     return (
-      <main className="min-h-screen bg-zinc-50 flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto h-10 w-10 rounded-full border-4 border-zinc-200 border-t-red-600 animate-spin" />
+          <div className="mx-auto h-10 w-10 rounded-full border-4 border-line border-t-red-600 animate-spin" />
 
           <p className="mt-4 text-sm font-medium text-zinc-500">
             Preparing listing form...
@@ -351,13 +351,13 @@ export default function AddPropertyPage() {
   }
 
   const inputClass =
-    "w-full rounded-xl border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-red-400 focus:bg-white focus:ring-4 focus:ring-red-50";
+    "w-full rounded-xl border border-line bg-background px-4 py-3 text-sm text-zinc-900 outline-none transition focus:border-accent/50 focus:bg-white focus:ring-4 focus:ring-accent/10";
 
   const labelClass =
     "mb-2 block text-sm font-bold text-zinc-700";
 
   return (
-    <main className="min-h-screen bg-zinc-50">
+    <main className="min-h-screen bg-background">
 
       <div className="border-b border-black/10 bg-header-bg">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
@@ -384,7 +384,7 @@ export default function AddPropertyPage() {
       <div className="mx-auto max-w-6xl px-4 py-8">
 
         <div className="mb-7">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-500">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
             List your property
           </p>
 
@@ -400,7 +400,7 @@ export default function AddPropertyPage() {
 
 
         {error && (
-          <div className="mb-5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          <div className="mb-5 rounded-2xl border border-accent/20 bg-accent-soft px-4 py-3 text-sm font-semibold text-accent">
             {error}
           </div>
         )}
@@ -415,10 +415,10 @@ export default function AddPropertyPage() {
 
             {/* BASIC DETAILS */}
 
-            <section className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <section className="rounded-3xl border border-line bg-white p-6 shadow-sm">
 
               <div className="mb-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+                <p className="text-xs font-bold uppercase tracking-wider text-accent">
                   Step 1
                 </p>
 
@@ -525,10 +525,10 @@ export default function AddPropertyPage() {
 
             {/* FEATURES */}
 
-            <section className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <section className="rounded-3xl border border-line bg-white p-6 shadow-sm">
 
               <div className="mb-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+                <p className="text-xs font-bold uppercase tracking-wider text-accent">
                   Step 2
                 </p>
 
@@ -594,10 +594,10 @@ export default function AddPropertyPage() {
 
             {/* LOCATION */}
 
-            <section className="rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+            <section className="rounded-3xl border border-line bg-white p-6 shadow-sm">
 
               <div className="mb-5">
-                <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+                <p className="text-xs font-bold uppercase tracking-wider text-accent">
                   Step 3
                 </p>
 
@@ -629,9 +629,9 @@ export default function AddPropertyPage() {
 
           <aside className="space-y-5 lg:sticky lg:top-24 lg:self-start">
 
-            <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <section className="rounded-3xl border border-line bg-white p-5 shadow-sm">
 
-              <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+              <p className="text-xs font-bold uppercase tracking-wider text-accent">
                 Property photos
               </p>
 
@@ -645,7 +645,7 @@ export default function AddPropertyPage() {
                 pick.
               </p>
 
-              <div className="mt-4 rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
+              <div className="mt-4 rounded-2xl border-2 border-dashed border-line bg-background p-6 text-center">
 
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
                   <Camera className="h-5 w-5 text-zinc-400" />
@@ -665,7 +665,7 @@ export default function AddPropertyPage() {
                   multiple
                   disabled={imageFiles.length >= MAX_PHOTOS}
                   onChange={handlePhotosSelected}
-                  className="mt-4 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-red-50 file:px-3 file:py-2 file:font-semibold file:text-red-600 disabled:opacity-50"
+                  className="mt-4 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-accent-soft file:px-3 file:py-2 file:font-semibold file:text-accent disabled:opacity-50"
                 />
 
               </div>
@@ -673,7 +673,7 @@ export default function AddPropertyPage() {
               {imageFiles.length > 0 && (
                 <>
                   <div className="mt-3 flex items-center justify-between">
-                    <p className="text-xs font-semibold text-emerald-700">
+                    <p className="text-xs font-semibold text-verified">
                       {imageFiles.length} photo
                       {imageFiles.length === 1 ? "" : "s"} selected
                     </p>
@@ -687,7 +687,7 @@ export default function AddPropertyPage() {
                     {imageFiles.map((file, index) => (
                       <div
                         key={`${file.name}-${index}`}
-                        className="group relative aspect-square overflow-hidden rounded-xl border border-zinc-200"
+                        className="group relative aspect-square overflow-hidden rounded-xl border border-line"
                       >
                         <img
                           src={URL.createObjectURL(file)}
@@ -718,9 +718,9 @@ export default function AddPropertyPage() {
             </section>
 
 
-            <section className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm">
+            <section className="rounded-3xl border border-line bg-white p-5 shadow-sm">
 
-              <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+              <p className="text-xs font-bold uppercase tracking-wider text-accent">
                 Optional
               </p>
 
@@ -737,17 +737,17 @@ export default function AddPropertyPage() {
                 type="file"
                 accept="video/*"
                 onChange={handleVideoSelected}
-                className="mt-4 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-red-50 file:px-3 file:py-2 file:font-semibold file:text-red-600"
+                className="mt-4 block w-full text-xs text-zinc-500 file:mr-3 file:rounded-lg file:border-0 file:bg-accent-soft file:px-3 file:py-2 file:font-semibold file:text-accent"
               />
 
               {videoFile && (
-                <div className="mt-3 flex items-center justify-between rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700">
+                <div className="mt-3 flex items-center justify-between rounded-xl bg-verified-soft px-3 py-2 text-xs font-semibold text-verified">
                   <span className="truncate">{videoFile.name}</span>
 
                   <button
                     type="button"
                     onClick={() => setVideoFile(null)}
-                    className="ml-2 shrink-0 text-emerald-700/70 hover:text-emerald-900"
+                    className="ml-2 shrink-0 text-verified/70 hover:text-verified"
                   >
                     Remove
                   </button>
@@ -759,7 +759,7 @@ export default function AddPropertyPage() {
 
             <section className="rounded-3xl bg-zinc-900 p-5 text-white shadow-xl">
 
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-400">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
                 Ready to list?
               </p>
 
@@ -775,7 +775,7 @@ export default function AddPropertyPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="mt-5 w-full rounded-2xl bg-red-600 px-5 py-3.5 font-bold text-white shadow-lg transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-5 w-full rounded-2xl bg-accent px-5 py-3.5 font-bold text-white shadow-lg transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {saving
                   ? uploadProgress || "Publishing..."

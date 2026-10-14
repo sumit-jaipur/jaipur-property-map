@@ -145,7 +145,7 @@ export default function AuthPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50 flex items-center justify-center px-4">
+    <main className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white border rounded-2xl shadow-sm p-7">
         <button
           onClick={() => router.push("/")}
@@ -174,7 +174,7 @@ export default function AuthPage() {
         </p>
 
         {error && (
-          <div className="bg-red-50 text-red-700 px-3 py-2 rounded-lg text-sm mb-4">
+          <div className="bg-accent-soft text-accent px-3 py-2 rounded-lg text-sm mb-4">
             {error}
           </div>
         )}
@@ -200,7 +200,7 @@ export default function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
               placeholder="you@example.com"
-              className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-zinc-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+              className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-zinc-900 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
             />
           </div>
 
@@ -218,7 +218,7 @@ export default function AuthPage() {
                       setError("");
                       setMessage("");
                     }}
-                    className="text-xs font-semibold text-red-600 hover:underline"
+                    className="text-xs font-semibold text-accent hover:underline"
                   >
                     Forgot password?
                   </button>
@@ -232,7 +232,7 @@ export default function AuthPage() {
                 required
                 minLength={6}
                 placeholder="Minimum 6 characters"
-                className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-zinc-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-zinc-900 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               />
             </div>
           )}
@@ -251,7 +251,7 @@ export default function AuthPage() {
                 required
                 minLength={10}
                 placeholder="10-digit mobile number"
-                className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-zinc-900 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100"
+                className="w-full border border-zinc-300 rounded-lg px-3 py-2.5 text-zinc-900 outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
               />
 
               <p className="mt-1 text-xs text-zinc-400">
@@ -275,8 +275,8 @@ export default function AuthPage() {
                     onClick={() => setAccountType(option.value)}
                     className={`rounded-lg border px-3 py-2.5 text-left text-xs transition ${
                       accountType === option.value
-                        ? "border-red-500 bg-red-50 text-red-700"
-                        : "border-zinc-200 text-zinc-600 hover:border-zinc-300"
+                        ? "border-accent bg-accent-soft text-accent"
+                        : "border-line text-zinc-600 hover:border-zinc-300"
                     }`}
                   >
                     <span className="block font-semibold">
@@ -297,14 +297,14 @@ export default function AuthPage() {
                 type="checkbox"
                 checked={agreedToTerms}
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-red-600 focus:ring-red-200"
+                className="mt-0.5 h-4 w-4 rounded border-zinc-300 text-accent focus:ring-accent/30"
               />
               <span>
                 I agree to the{" "}
                 <Link
                   href="/terms"
                   target="_blank"
-                  className="font-semibold text-red-600 hover:underline"
+                  className="font-semibold text-accent hover:underline"
                 >
                   Terms of Service
                 </Link>{" "}
@@ -312,7 +312,7 @@ export default function AuthPage() {
                 <Link
                   href="/privacy"
                   target="_blank"
-                  className="font-semibold text-red-600 hover:underline"
+                  className="font-semibold text-accent hover:underline"
                 >
                   Privacy Policy
                 </Link>
@@ -328,7 +328,7 @@ export default function AuthPage() {
               (mode === "signup" &&
                 (!agreedToTerms || phone.trim().length < 10))
             }
-            className="w-full bg-red-600 hover:bg-red-700 text-white rounded-lg py-2.5 font-semibold disabled:opacity-50"
+            className="w-full bg-accent hover:bg-accent text-white rounded-lg py-2.5 font-semibold disabled:opacity-50"
           >
             {loading
               ? "Please wait..."
@@ -350,7 +350,7 @@ export default function AuthPage() {
                   setError("");
                   setMessage("");
                 }}
-                className="text-red-600 font-semibold"
+                className="text-accent font-semibold"
               >
                 Sign Up
               </button>
@@ -364,7 +364,7 @@ export default function AuthPage() {
                   setError("");
                   setMessage("");
                 }}
-                className="text-red-600 font-semibold"
+                className="text-accent font-semibold"
               >
                 Sign In
               </button>
@@ -378,7 +378,7 @@ export default function AuthPage() {
                   setError("");
                   setMessage("");
                 }}
-                className="text-red-600 font-semibold"
+                className="text-accent font-semibold"
               >
                 Sign In
               </button>

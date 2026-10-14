@@ -136,9 +136,9 @@ export default function AlertsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-zinc-50 flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-red-600" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-line border-t-red-600" />
           <p className="mt-4 text-sm font-medium text-zinc-500">
             Loading alerts...
           </p>
@@ -148,7 +148,7 @@ export default function AlertsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50">
+    <main className="min-h-screen bg-background">
 
       <div className="border-b border-black/10 bg-header-bg">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
@@ -178,7 +178,7 @@ export default function AlertsPage() {
       <div className="mx-auto max-w-4xl px-4 py-8">
 
         <div className="mb-7">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-500">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
             Market alerts
           </p>
 
@@ -194,7 +194,7 @@ export default function AlertsPage() {
 
 
         {error && (
-          <div className="mb-5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          <div className="mb-5 rounded-2xl border border-accent/20 bg-accent-soft px-4 py-3 text-sm font-semibold text-accent">
             {error}
           </div>
         )}
@@ -203,8 +203,8 @@ export default function AlertsPage() {
         {alerts.length === 0 && (
           <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-12 text-center">
 
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
-              <Bell className="h-8 w-8 text-red-500" />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft">
+              <Bell className="h-8 w-8 text-accent" />
             </div>
 
             <h2 className="mt-4 text-xl font-black text-zinc-900">
@@ -218,7 +218,7 @@ export default function AlertsPage() {
 
             <Link
               href="/saved-searches"
-              className="mt-5 inline-block rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white"
+              className="mt-5 inline-block rounded-xl bg-accent px-5 py-3 text-sm font-bold text-white"
             >
               View Saved Searches
             </Link>
@@ -273,7 +273,7 @@ export default function AlertsPage() {
                       type="button"
                       onClick={() => dismissAlert(alert.id)}
                       disabled={dismissingId === alert.id}
-                      className="rounded-xl border border-zinc-200 px-3 py-2.5 text-sm font-semibold text-zinc-500 transition hover:bg-zinc-50 disabled:opacity-50"
+                      className="rounded-xl border border-line px-3 py-2.5 text-sm font-semibold text-zinc-500 transition hover:bg-background disabled:opacity-50"
                     >
                       {dismissingId === alert.id ? "..." : "Dismiss"}
                     </button>
@@ -289,7 +289,7 @@ export default function AlertsPage() {
             return (
               <article
                 key={alert.id}
-                className="flex flex-col gap-4 rounded-3xl border border-zinc-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center"
+                className="flex flex-col gap-4 rounded-3xl border border-line bg-white p-4 shadow-sm sm:flex-row sm:items-center"
               >
 
                 <Link
@@ -309,13 +309,13 @@ export default function AlertsPage() {
                 <div className="min-w-0 flex-1">
 
                   {alert.saved_searches && (
-                    <p className="text-xs font-bold uppercase tracking-wide text-red-500">
+                    <p className="text-xs font-bold uppercase tracking-wide text-accent">
                       Matches &quot;{alert.saved_searches.name}&quot;
                     </p>
                   )}
 
                   <Link href={`/properties/${alert.properties.id}`}>
-                    <h2 className="mt-1 truncate text-base font-black text-zinc-900 hover:text-red-600">
+                    <h2 className="mt-1 truncate text-base font-black text-zinc-900 hover:text-accent">
                       {alert.properties.title}
                     </h2>
                   </Link>
@@ -325,7 +325,7 @@ export default function AlertsPage() {
                     {alert.properties.bhk} BHK {alert.properties.type}
                   </p>
 
-                  <p className="mt-1 text-lg font-black text-red-600">
+                  <p className="mt-1 text-lg font-black text-accent">
                     {formatPrice(alert.properties.price)}
                   </p>
 
@@ -344,7 +344,7 @@ export default function AlertsPage() {
                     type="button"
                     onClick={() => dismissAlert(alert.id)}
                     disabled={dismissingId === alert.id}
-                    className="rounded-xl border border-zinc-200 px-3 py-2.5 text-sm font-semibold text-zinc-500 transition hover:bg-zinc-50 disabled:opacity-50"
+                    className="rounded-xl border border-line px-3 py-2.5 text-sm font-semibold text-zinc-500 transition hover:bg-background disabled:opacity-50"
                   >
                     {dismissingId === alert.id ? "..." : "Dismiss"}
                   </button>

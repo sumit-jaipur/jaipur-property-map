@@ -137,9 +137,9 @@ export default function FavoritesPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-zinc-50 flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-red-600" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-line border-t-red-600" />
 
           <p className="mt-4 text-sm font-medium text-zinc-500">
             Loading favorites...
@@ -150,7 +150,7 @@ export default function FavoritesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50">
+    <main className="min-h-screen bg-background">
 
       <div className="border-b border-black/10 bg-header-bg">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
@@ -177,7 +177,7 @@ export default function FavoritesPage() {
       <div className="mx-auto max-w-7xl px-4 py-8">
 
         <div className="mb-7">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-500">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
             Your shortlist
           </p>
 
@@ -192,7 +192,7 @@ export default function FavoritesPage() {
 
 
         {error && (
-          <div className="mb-5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          <div className="mb-5 rounded-2xl border border-accent/20 bg-accent-soft px-4 py-3 text-sm font-semibold text-accent">
             {error}
           </div>
         )}
@@ -201,8 +201,8 @@ export default function FavoritesPage() {
         {!error && properties.length === 0 && (
           <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-12 text-center">
 
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
-              <Heart className="h-8 w-8 text-red-500" />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft">
+              <Heart className="h-8 w-8 text-accent" />
             </div>
 
             <h2 className="mt-4 text-xl font-black text-zinc-900">
@@ -215,7 +215,7 @@ export default function FavoritesPage() {
 
             <Link
               href="/"
-              className="mt-5 inline-block rounded-xl bg-red-600 px-5 py-3 text-sm font-bold text-white"
+              className="mt-5 inline-block rounded-xl bg-accent px-5 py-3 text-sm font-bold text-white"
             >
               Explore Properties
             </Link>
@@ -229,7 +229,7 @@ export default function FavoritesPage() {
           {properties.map((property) => (
             <article
               key={property.id}
-              className="group overflow-hidden rounded-3xl border border-zinc-200 bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+              className="group overflow-hidden rounded-3xl border border-line bg-white shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl"
             >
 
               <div className="relative overflow-hidden">
@@ -257,7 +257,7 @@ export default function FavoritesPage() {
                   {removingId === property.id ? (
                     "..."
                   ) : (
-                    <Heart className="h-5 w-5 text-red-500" fill="currentColor" />
+                    <Heart className="h-5 w-5 text-accent" fill="currentColor" />
                   )}
                 </button>
 
@@ -271,7 +271,7 @@ export default function FavoritesPage() {
               <div className="p-5">
 
                 <Link href={`/properties/${property.id}`}>
-                  <h2 className="truncate text-lg font-black text-zinc-900 transition hover:text-red-600">
+                  <h2 className="truncate text-lg font-black text-zinc-900 transition hover:text-accent">
                     {property.title}
                   </h2>
                 </Link>
@@ -280,12 +280,12 @@ export default function FavoritesPage() {
                   {property.area || "Jaipur"}
                 </p>
 
-                <p className="mt-3 text-xl font-black text-red-600">
+                <p className="mt-3 text-xl font-black text-accent">
                   {formatPrice(property.price)}
                 </p>
 
 
-                <div className="mt-4 grid grid-cols-3 divide-x divide-zinc-200 rounded-xl bg-zinc-50 py-2">
+                <div className="mt-4 grid grid-cols-3 divide-x divide-line rounded-xl bg-background py-2">
 
                   <div className="text-center">
                     <p className="text-[10px] uppercase text-zinc-400">
@@ -335,7 +335,7 @@ export default function FavoritesPage() {
                       removeFavorite(property.id)
                     }
                     disabled={removingId === property.id}
-                    className="rounded-xl bg-red-50 px-3 py-2.5 text-sm font-bold text-red-600 transition hover:bg-red-100 disabled:opacity-50"
+                    className="rounded-xl bg-accent-soft px-3 py-2.5 text-sm font-bold text-accent transition hover:bg-accent-soft disabled:opacity-50"
                   >
                     {removingId === property.id
                       ? "Removing..."

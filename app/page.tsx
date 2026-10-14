@@ -12,7 +12,7 @@ import {
 } from "./lib/savedSearch";
 import { LOCALITIES } from "./lib/localities";
 import { PriceUnit, priceUnitToRupees } from "./components/PriceInput";
-import { Bell } from "lucide-react";
+import { Bell, Bed, Compass, Car } from "lucide-react";
 
 type Property = {
   id: number;
@@ -1185,7 +1185,7 @@ export default function Home() {
 
 
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="min-h-screen bg-background">
 
       {/* HEADER */}
 
@@ -1207,7 +1207,7 @@ export default function Home() {
 
               <div className="hidden sm:block">
 
-                <p className="text-base font-black leading-tight text-header-fg">
+                <p className="font-display text-base font-bold leading-tight text-header-fg">
                   99Bricks
                 </p>
 
@@ -1290,7 +1290,7 @@ export default function Home() {
 
             {suggestions.length >
               0 && (
-              <div className="absolute left-0 right-0 top-full z-[100] mt-2 overflow-hidden rounded-2xl border border-zinc-200 bg-white shadow-2xl">
+              <div className="absolute left-0 right-0 top-full z-[100] mt-2 overflow-hidden rounded-2xl border border-line bg-white shadow-2xl">
 
                 {suggestions.map(
                   (suggestion) => (
@@ -1366,13 +1366,13 @@ export default function Home() {
 
       {/* FILTERS */}
 
-      <div className="relative z-20 border-b border-zinc-200 bg-white">
+      <div className="relative z-20 border-b border-line bg-white">
 
         <div className="mx-auto max-w-[1600px] px-4 py-2 lg:px-6 lg:py-3">
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
 
-            <div className="flex shrink-0 gap-1 rounded-xl bg-zinc-100 p-1">
+            <div className="flex shrink-0 gap-1 rounded-xl bg-surface-2 p-1">
               {[
                 "All",
                 "Villa",
@@ -1398,7 +1398,7 @@ export default function Home() {
             </div>
 
 
-            <div className="flex shrink-0 gap-1 rounded-xl bg-zinc-100 p-1">
+            <div className="flex shrink-0 gap-1 rounded-xl bg-surface-2 p-1">
               {[
                 { value: "Any", label: "Any BHK" },
                 { value: "2", label: "2 BHK" },
@@ -1434,7 +1434,7 @@ export default function Home() {
                   updateMinPrice(e.target.value, minPriceUnit)
                 }
                 placeholder="Min"
-                className="w-[84px] min-w-0 rounded-xl border border-zinc-200 py-2 pl-2.5 pr-8 text-sm outline-none"
+                className="w-[84px] min-w-0 rounded-xl border border-line py-2 pl-2.5 pr-8 text-sm outline-none"
               />
               <button
                 type="button"
@@ -1444,7 +1444,7 @@ export default function Home() {
                     minPriceUnit === "lakh" ? "crore" : "lakh"
                   )
                 }
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600 transition hover:bg-zinc-200"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600 transition hover:bg-line"
                 title="Tap to switch Lakh / Cr"
               >
                 {minPriceUnit === "lakh" ? "L" : "Cr"}
@@ -1463,7 +1463,7 @@ export default function Home() {
                   updateMaxPrice(e.target.value, maxPriceUnit)
                 }
                 placeholder="Max"
-                className="w-[84px] min-w-0 rounded-xl border border-zinc-200 py-2 pl-2.5 pr-8 text-sm outline-none"
+                className="w-[84px] min-w-0 rounded-xl border border-line py-2 pl-2.5 pr-8 text-sm outline-none"
               />
               <button
                 type="button"
@@ -1473,7 +1473,7 @@ export default function Home() {
                     maxPriceUnit === "lakh" ? "crore" : "lakh"
                   )
                 }
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600 transition hover:bg-zinc-200"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-md bg-surface-2 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600 transition hover:bg-line"
                 title="Tap to switch Lakh / Cr"
               >
                 {maxPriceUnit === "lakh" ? "L" : "Cr"}
@@ -1493,7 +1493,7 @@ export default function Home() {
                     )
                   )
                 }
-                className="shrink-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700"
+                className="shrink-0 rounded-xl border border-accent/30 bg-accent-soft px-3 py-2 text-sm font-semibold text-accent"
               >
                 <option value={2}>
                   2 km radius
@@ -1526,8 +1526,8 @@ export default function Home() {
                 showMoreFilters ||
                 activeFilterCount >
                   0
-                  ? "border-red-200 bg-red-50 text-red-700"
-                  : "border-zinc-200 bg-white text-zinc-700"
+                  ? "border-accent/30 bg-accent-soft text-accent"
+                  : "border-line bg-white text-zinc-700"
               }`}
             >
               Filters
@@ -1544,7 +1544,7 @@ export default function Home() {
                 onClick={
                   clearFilters
                 }
-                className="shrink-0 px-2 py-2 text-sm font-semibold text-red-600"
+                className="shrink-0 px-2 py-2 text-sm font-semibold text-accent"
               >
                 Clear
               </button>
@@ -1554,7 +1554,7 @@ export default function Home() {
             <button
               type="button"
               onClick={openSaveSearch}
-              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:border-accent/40 hover:text-accent"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-line bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:border-accent/40 hover:text-accent"
             >
               <Bell className="h-4 w-4" />
               Save Search
@@ -1583,7 +1583,7 @@ export default function Home() {
                     setSaveSearchName(e.target.value)
                   }
                   placeholder="Example: 3 BHK in Vaishali Nagar"
-                  className="w-full min-w-0 rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm outline-none"
+                  className="w-full min-w-0 rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none"
                 />
               </div>
 
@@ -1617,7 +1617,7 @@ export default function Home() {
 
 
           {showMoreFilters && (
-            <div className="mt-3 grid gap-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4 sm:grid-cols-3">
+            <div className="mt-3 grid gap-3 rounded-2xl border border-line bg-background p-4 sm:grid-cols-3">
 
               <div>
 
@@ -1632,7 +1632,7 @@ export default function Home() {
                       e.target.value
                     )
                   }
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm"
                 >
                   <option value="Any">
                     Any Facing
@@ -1671,7 +1671,7 @@ export default function Home() {
                       e.target.value
                     )
                   }
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm"
                 >
                   <option value="Any">
                     Any Parking
@@ -1706,7 +1706,7 @@ export default function Home() {
                     )
                   }
                   placeholder="Example: 30"
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm"
+                  className="w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm"
                 />
 
               </div>
@@ -1716,9 +1716,9 @@ export default function Home() {
 
 
           {searchLocation && (
-            <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-red-50 px-4 py-2.5">
+            <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-accent-soft px-4 py-2.5">
 
-              <p className="truncate text-sm font-medium text-red-700">
+              <p className="truncate text-sm font-medium text-accent">
                 Showing properties near{" "}
                 <span className="font-bold">
                   {searchText}
@@ -1730,7 +1730,7 @@ export default function Home() {
                 onClick={
                   clearLocation
                 }
-                className="shrink-0 text-xs font-bold text-red-600"
+                className="shrink-0 text-xs font-bold text-accent"
               >
                 Remove location
               </button>
@@ -1740,7 +1740,7 @@ export default function Home() {
 
 
           {searchError && (
-            <p className="mt-2 text-sm font-medium text-red-600">
+            <p className="mt-2 text-sm font-medium text-accent">
               {searchError}
             </p>
           )}
@@ -1759,7 +1759,7 @@ export default function Home() {
 
         <section
           ref={sheetRef}
-          className={`order-1 fixed inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden rounded-t-3xl border-t border-zinc-200 bg-zinc-50 shadow-[0_-12px_30px_-6px_rgba(0,0,0,0.25)] transition-[top] duration-300 ease-out ${
+          className={`order-1 fixed inset-x-0 bottom-0 z-10 flex flex-col overflow-hidden rounded-t-3xl border-t border-line bg-background shadow-[0_-12px_30px_-6px_rgba(0,0,0,0.25)] transition-[top] duration-300 ease-out ${
             // 132px clears the header (now ~56px after trimming its mobile
             // padding/logo size) plus the filter row (now ~48px) on mobile,
             // leaving a small gap so the chips stay visible and tappable
@@ -1789,7 +1789,7 @@ export default function Home() {
             }
             onTouchStart={handleSheetDragStart}
             onTouchEnd={handleSheetDragEnd}
-            className="sticky top-0 z-10 shrink-0 touch-none select-none border-b border-zinc-200 bg-zinc-50/95 backdrop-blur lg:touch-auto"
+            className="sticky top-0 z-10 shrink-0 touch-none select-none border-b border-line bg-background/95 backdrop-blur lg:touch-auto"
           >
 
             <div className="flex justify-center pt-2.5 pb-1 lg:hidden">
@@ -1802,7 +1802,7 @@ export default function Home() {
 
                 <div>
 
-                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-red-500">
+                  <p className="text-xs font-bold uppercase tracking-[0.16em] text-accent">
                     Jaipur Properties
                   </p>
 
@@ -1845,7 +1845,7 @@ export default function Home() {
               a blurb, matching listings) but weren't linked from
               anywhere in the app, so nobody could find them. */}
 
-          <div className="border-b border-zinc-200 bg-white px-4 py-3 lg:px-5">
+          <div className="border-b border-line bg-white px-4 py-3 lg:px-5">
 
             <p className="text-xs font-bold uppercase tracking-wide text-zinc-400">
               Explore by locality
@@ -1856,7 +1856,7 @@ export default function Home() {
                 <Link
                   key={locality.slug}
                   href={`/locality/${locality.slug}`}
-                  className="shrink-0 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-zinc-200"
+                  className="shrink-0 rounded-full bg-surface-2 px-3 py-1.5 text-xs font-semibold text-zinc-700 transition hover:bg-line"
                 >
                   {locality.name}
                 </Link>
@@ -1911,7 +1911,7 @@ export default function Home() {
                     className={`group relative scroll-mt-24 overflow-hidden rounded-2xl border bg-white shadow-sm transition duration-300 hover:-translate-y-0.5 hover:shadow-xl ${
                       highlightedId === property.id
                         ? "border-accent ring-2 ring-accent/40"
-                        : "border-zinc-200"
+                        : "border-line"
                     }`}
                   >
 
@@ -1945,7 +1945,7 @@ export default function Home() {
 
                           {property.verification_status ===
                             "approved" && (
-                            <span className="rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-bold text-white shadow">
+                            <span className="rounded-full bg-verified px-2.5 py-1 text-[11px] font-bold text-white shadow">
                               Verified
                             </span>
                           )}
@@ -2031,7 +2031,7 @@ export default function Home() {
 
                         <div className="min-w-0">
 
-                          <h3 className="truncate text-base font-bold text-zinc-900 transition group-hover:text-red-600">
+                          <h3 className="truncate text-base font-bold text-zinc-900 transition group-hover:text-accent">
                             {
                               property.title
                             }
@@ -2045,7 +2045,7 @@ export default function Home() {
                         </div>
 
 
-                        <p className="shrink-0 text-base font-black text-red-600">
+                        <p className="shrink-0 font-display text-lg font-bold leading-none text-accent">
                           {formatPrice(
                             property.price
                           )}
@@ -2054,53 +2054,27 @@ export default function Home() {
                       </div>
 
 
-                      <div className="mt-4 grid grid-cols-3 divide-x divide-zinc-200 rounded-xl bg-zinc-50 py-2">
+                      <div className="mt-3.5 flex items-center gap-x-4 gap-y-1 border-t border-line pt-3 text-xs font-semibold text-zinc-600">
 
-                        <div className="px-2 text-center">
+                        <span className="flex items-center gap-1.5">
+                          <Bed className="h-3.5 w-3.5 shrink-0 text-zinc-400" strokeWidth={2} />
+                          {property.bhk ? `${property.bhk} BHK` : "-"}
+                        </span>
 
-                          <p className="text-[10px] uppercase tracking-wide text-zinc-400">
-                            BHK
-                          </p>
+                        <span className="flex items-center gap-1.5 truncate">
+                          <Compass className="h-3.5 w-3.5 shrink-0 text-zinc-400" strokeWidth={2} />
+                          {property.facing || "-"}
+                        </span>
 
-                          <p className="mt-0.5 text-xs font-bold text-zinc-800">
-                            {property.bhk ||
-                              "-"}
-                          </p>
-
-                        </div>
-
-
-                        <div className="px-2 text-center">
-
-                          <p className="text-[10px] uppercase tracking-wide text-zinc-400">
-                            Facing
-                          </p>
-
-                          <p className="mt-0.5 truncate text-xs font-bold text-zinc-800">
-                            {property.facing ||
-                              "-"}
-                          </p>
-
-                        </div>
-
-
-                        <div className="px-2 text-center">
-
-                          <p className="text-[10px] uppercase tracking-wide text-zinc-400">
-                            Parking
-                          </p>
-
-                          <p className="mt-0.5 truncate text-xs font-bold text-zinc-800">
-                            {property.parking ||
-                              "-"}
-                          </p>
-
-                        </div>
+                        <span className="flex items-center gap-1.5 truncate">
+                          <Car className="h-3.5 w-3.5 shrink-0 text-zinc-400" strokeWidth={2} />
+                          {property.parking || "-"}
+                        </span>
 
                       </div>
 
 
-                      <div className="mt-4 flex items-center justify-between gap-3">
+                      <div className="mt-3 flex items-center justify-between gap-3">
 
                         <span className="text-xs font-medium text-zinc-400">
                           Road:{" "}
@@ -2108,7 +2082,7 @@ export default function Home() {
                             "-"}
                         </span>
 
-                        <span className="text-sm font-bold text-red-600">
+                        <span className="text-sm font-bold text-accent">
                           View details &gt;
                         </span>
 
@@ -2180,7 +2154,7 @@ export default function Home() {
 
       <Link
         href="/add-property"
-        className={`fixed right-5 z-40 rounded-full bg-red-600 px-5 py-3 text-sm font-bold text-white shadow-2xl md:hidden ${
+        className={`fixed right-5 z-40 rounded-full bg-accent px-5 py-3 text-sm font-bold text-white shadow-2xl md:hidden ${
           compareIds.length > 0 ? "bottom-24" : "bottom-5"
         }`}
       >
@@ -2191,7 +2165,7 @@ export default function Home() {
       {/* COMPARE BAR */}
 
       {compareIds.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200 bg-white/95 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-white/95 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur">
 
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
 

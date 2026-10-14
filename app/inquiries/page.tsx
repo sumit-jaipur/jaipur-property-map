@@ -102,9 +102,9 @@ export default function InquiriesPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-zinc-50 flex items-center justify-center">
+      <main className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-zinc-200 border-t-red-600" />
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-line border-t-red-600" />
 
           <p className="mt-4 text-sm font-medium text-zinc-500">
             Loading seller inbox...
@@ -115,7 +115,7 @@ export default function InquiriesPage() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50">
+    <main className="min-h-screen bg-background">
 
       <div className="border-b border-black/10 bg-header-bg">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
@@ -142,7 +142,7 @@ export default function InquiriesPage() {
       <div className="mx-auto max-w-5xl px-4 py-8">
 
         <div className="mb-7">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-500">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
             Seller Messages
           </p>
 
@@ -157,7 +157,7 @@ export default function InquiriesPage() {
 
 
         {error && (
-          <div className="mb-5 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+          <div className="mb-5 rounded-2xl border border-accent/20 bg-accent-soft px-4 py-3 text-sm font-semibold text-accent">
             {error}
           </div>
         )}
@@ -166,8 +166,8 @@ export default function InquiriesPage() {
         {!error && inquiries.length === 0 && (
           <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-12 text-center">
 
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
-              <Inbox className="h-8 w-8 text-red-500" />
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent-soft">
+              <Inbox className="h-8 w-8 text-accent" />
             </div>
 
             <h2 className="mt-4 text-xl font-black text-zinc-900">
@@ -194,7 +194,7 @@ export default function InquiriesPage() {
           {inquiries.map((inquiry) => (
             <article
               key={inquiry.id}
-              className="rounded-3xl border border-zinc-200 bg-white p-5 shadow-sm transition hover:shadow-md"
+              className="rounded-3xl border border-line bg-white p-5 shadow-sm transition hover:shadow-md"
             >
 
               <div className="flex flex-col gap-4 sm:flex-row">
@@ -206,7 +206,7 @@ export default function InquiriesPage() {
                     className="h-36 w-full rounded-2xl object-cover sm:h-28 sm:w-36"
                   />
                 ) : (
-                  <div className="flex h-28 w-full items-center justify-center rounded-2xl bg-zinc-100 sm:w-36">
+                  <div className="flex h-28 w-full items-center justify-center rounded-2xl bg-surface-2 sm:w-36">
                     <Home className="h-8 w-8 text-zinc-400" />
                   </div>
                 )}
@@ -217,7 +217,7 @@ export default function InquiriesPage() {
                   <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
 
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wide text-red-500">
+                      <p className="text-xs font-bold uppercase tracking-wide text-accent">
                         Inquiry for
                       </p>
 
@@ -226,7 +226,7 @@ export default function InquiriesPage() {
                       </h2>
                     </div>
 
-                    <span className="w-fit rounded-full bg-zinc-100 px-3 py-1 text-xs font-semibold text-zinc-500">
+                    <span className="w-fit rounded-full bg-surface-2 px-3 py-1 text-xs font-semibold text-zinc-500">
                       {new Date(
                         inquiry.created_at
                       ).toLocaleDateString()}
@@ -235,7 +235,7 @@ export default function InquiriesPage() {
                   </div>
 
 
-                  <div className="mt-4 rounded-2xl border border-zinc-100 bg-zinc-50 px-4 py-3">
+                  <div className="mt-4 rounded-2xl border border-zinc-100 bg-background px-4 py-3">
 
                     <p className="text-xs font-bold uppercase tracking-wide text-zinc-400">
                       Buyer Message

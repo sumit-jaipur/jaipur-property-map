@@ -392,7 +392,7 @@ function ComparePageInner() {
   }
 
   return (
-    <main className="min-h-screen bg-zinc-50">
+    <main className="min-h-screen bg-background">
 
       <div className="border-b border-black/10 bg-header-bg">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
@@ -433,7 +433,7 @@ function ComparePageInner() {
       <div className="mx-auto max-w-6xl px-4 py-8">
 
         <div className="mb-7">
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-red-500">
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent">
             Compare properties
           </p>
 
@@ -444,14 +444,14 @@ function ComparePageInner() {
 
 
         {loading && (
-          <div className="rounded-2xl border border-zinc-200 bg-white p-10 text-center text-sm font-medium text-zinc-500">
+          <div className="rounded-2xl border border-line bg-white p-10 text-center text-sm font-medium text-zinc-500">
             Loading properties...
           </div>
         )}
 
 
         {!loading && properties.length < 2 && (
-          <div className="rounded-3xl border border-zinc-200 bg-white p-10 text-center">
+          <div className="rounded-3xl border border-line bg-white p-10 text-center">
             <h2 className="text-xl font-black text-zinc-900">
               Select at least 2 properties to compare
             </h2>
@@ -472,19 +472,19 @@ function ComparePageInner() {
 
 
         {!loading && properties.length >= 2 && (
-          <div className="overflow-x-auto rounded-3xl border border-zinc-200 bg-white shadow-sm">
+          <div className="overflow-x-auto rounded-3xl border border-line bg-white shadow-sm">
             <table className="w-full min-w-[640px] border-collapse text-sm">
 
               <thead>
                 <tr>
-                  <th className="w-40 border-b border-zinc-200 bg-zinc-50 p-4 text-left text-xs font-bold uppercase tracking-wide text-zinc-400">
+                  <th className="w-40 border-b border-line bg-background p-4 text-left text-xs font-bold uppercase tracking-wide text-zinc-400">
                     &nbsp;
                   </th>
 
                   {properties.map((property) => (
                     <th
                       key={property.id}
-                      className="min-w-[220px] border-b border-l border-zinc-200 p-4 text-left align-top"
+                      className="min-w-[220px] border-b border-l border-line p-4 text-left align-top"
                     >
                       <div className="relative">
                         <button
@@ -492,7 +492,7 @@ function ComparePageInner() {
                           onClick={() =>
                             removeProperty(property.id)
                           }
-                          className="absolute right-0 top-0 flex h-6 w-6 items-center justify-center rounded-full bg-zinc-100 text-xs font-bold text-zinc-500 hover:bg-zinc-200"
+                          className="absolute right-0 top-0 flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-xs font-bold text-zinc-500 hover:bg-line"
                           title="Remove from comparison"
                         >
                           ×
@@ -533,17 +533,17 @@ function ComparePageInner() {
                     className={
                       index % 2 === 0
                         ? "bg-white"
-                        : "bg-zinc-50/60"
+                        : "bg-background/60"
                     }
                   >
-                    <td className="border-b border-zinc-200 p-4 text-xs font-bold uppercase tracking-wide text-zinc-400">
+                    <td className="border-b border-line p-4 text-xs font-bold uppercase tracking-wide text-zinc-400">
                       {row.label}
                     </td>
 
                     {properties.map((property) => (
                       <td
                         key={property.id}
-                        className="border-b border-l border-zinc-200 p-4 font-semibold text-zinc-800"
+                        className="border-b border-l border-line p-4 font-semibold text-zinc-800"
                       >
                         {row.render(property)}
                       </td>
@@ -558,9 +558,9 @@ function ComparePageInner() {
 
 
         {!loading && properties.length >= 2 && (
-          <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="mt-6 rounded-3xl border border-line bg-white p-6 shadow-sm">
 
-            <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+            <p className="text-xs font-bold uppercase tracking-wider text-accent">
               AI overview
             </p>
 
@@ -575,7 +575,7 @@ function ComparePageInner() {
             )}
 
             {storylineError && (
-              <p className="mt-3 text-sm font-semibold text-red-600">
+              <p className="mt-3 text-sm font-semibold text-accent">
                 {storylineError}
               </p>
             )}
@@ -591,9 +591,9 @@ function ComparePageInner() {
 
 
         {!loading && properties.length >= 2 && (
-          <div className="mt-6 rounded-3xl border border-zinc-200 bg-white p-6 shadow-sm">
+          <div className="mt-6 rounded-3xl border border-line bg-white p-6 shadow-sm">
 
-            <p className="text-xs font-bold uppercase tracking-wider text-red-500">
+            <p className="text-xs font-bold uppercase tracking-wider text-accent">
               Ask AI which one is best for you
             </p>
 
@@ -619,7 +619,7 @@ function ComparePageInner() {
                     }
                     placeholder={QUESTIONS[step].placeholder}
                     rows={2}
-                    className="w-full resize-none rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 pr-14 text-sm text-zinc-800 outline-none focus:border-accent"
+                    className="w-full resize-none rounded-2xl border border-line bg-background px-4 py-3 pr-14 text-sm text-zinc-800 outline-none focus:border-accent"
                   />
 
                   <button
@@ -632,8 +632,8 @@ function ComparePageInner() {
                     title={listening ? "Stop listening" : "Speak your answer"}
                     className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full transition ${
                       listening
-                        ? "animate-pulse bg-red-600 text-white"
-                        : "bg-zinc-100 text-zinc-500 hover:bg-accent-soft hover:text-accent"
+                        ? "animate-pulse bg-accent text-white"
+                        : "bg-surface-2 text-zinc-500 hover:bg-accent-soft hover:text-accent"
                     }`}
                   >
                     <Mic className="h-4 w-4" />
@@ -653,7 +653,7 @@ function ComparePageInner() {
                     <button
                       type="button"
                       onClick={() => setStep((s) => s - 1)}
-                      className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition hover:bg-zinc-50"
+                      className="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-zinc-600 transition hover:bg-background"
                     >
                       Back
                     </button>
@@ -677,7 +677,7 @@ function ComparePageInner() {
             {step >= QUESTIONS.length && (
               <>
 
-                <div className="mt-3 space-y-2 rounded-2xl bg-zinc-50 p-4">
+                <div className="mt-3 space-y-2 rounded-2xl bg-background p-4">
                   {QUESTIONS.map((q) => (
                     <p key={q.key} className="text-sm text-zinc-700">
                       <span className="font-bold text-zinc-900">
@@ -704,7 +704,7 @@ function ComparePageInner() {
                   <button
                     type="button"
                     onClick={() => setStep(0)}
-                    className="rounded-xl border border-zinc-200 px-4 py-2.5 text-sm font-semibold text-zinc-600 transition hover:bg-zinc-50"
+                    className="rounded-xl border border-line px-4 py-2.5 text-sm font-semibold text-zinc-600 transition hover:bg-background"
                   >
                     Edit answers
                   </button>
@@ -727,7 +727,7 @@ function ComparePageInner() {
 
 
             {advisorError && (
-              <div className="mt-4 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+              <div className="mt-4 rounded-2xl border border-accent/20 bg-accent-soft px-4 py-3 text-sm font-semibold text-accent">
                 {advisorError}
               </div>
             )}
@@ -783,7 +783,7 @@ export default function ComparePage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-screen items-center justify-center bg-zinc-50">
+        <main className="flex min-h-screen items-center justify-center bg-background">
           <p className="text-sm font-medium text-zinc-500">
             Loading...
           </p>

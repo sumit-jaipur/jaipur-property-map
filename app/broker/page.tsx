@@ -58,11 +58,11 @@ function formatPrice(price: number) {
 }
 
 const STATUS_STYLES: Record<string, string> = {
-  new: "bg-zinc-100 text-zinc-600",
+  new: "bg-surface-2 text-zinc-600",
   contacted: "bg-amber-50 text-amber-700",
   site_visit_scheduled: "bg-blue-50 text-blue-700",
   closed_won: "bg-green-50 text-green-700",
-  closed_lost: "bg-red-50 text-red-700",
+  closed_lost: "bg-accent-soft text-accent",
 };
 
 const MAX_PHOTO_MB = 10;
@@ -240,7 +240,7 @@ export default function BrokerDashboardPage() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-zinc-50">
+      <main className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-sm text-zinc-400">Loading your visits...</p>
       </main>
     );
@@ -248,8 +248,8 @@ export default function BrokerDashboardPage() {
 
   if (accessDenied) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-4">
-        <div className="max-w-md rounded-3xl border border-zinc-200 bg-white p-8 text-center shadow-sm">
+      <main className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="max-w-md rounded-3xl border border-line bg-white p-8 text-center shadow-sm">
           <h1 className="text-xl font-black text-zinc-900">
             Brokers &amp; agents only
           </h1>
@@ -272,7 +272,7 @@ export default function BrokerDashboardPage() {
   const completed = leads.filter((lead) => lead.visit_completed);
 
   return (
-    <main className="min-h-screen bg-zinc-50">
+    <main className="min-h-screen bg-background">
       <div className="border-b border-black/10 bg-header-bg">
         <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-4">
           <Link href="/" className="flex items-center gap-2.5">
@@ -303,7 +303,7 @@ export default function BrokerDashboardPage() {
         </p>
 
         {error && (
-          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mt-4 rounded-xl border border-accent/30 bg-accent-soft px-4 py-3 text-sm text-accent">
             {error}
           </div>
         )}
@@ -324,7 +324,7 @@ export default function BrokerDashboardPage() {
               {pending.map((lead) => (
                 <div
                   key={lead.id}
-                  className="rounded-2xl border border-zinc-200 bg-white p-5 shadow-sm"
+                  className="rounded-2xl border border-line bg-white p-5 shadow-sm"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
@@ -332,7 +332,7 @@ export default function BrokerDashboardPage() {
                         <span
                           className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
                             STATUS_STYLES[lead.status] ||
-                            "bg-zinc-100 text-zinc-600"
+                            "bg-surface-2 text-zinc-600"
                           }`}
                         >
                           {lead.status.replace(/_/g, " ")}
@@ -374,7 +374,7 @@ export default function BrokerDashboardPage() {
                     )}
                   </div>
 
-                  <div className="mt-4 rounded-xl border border-zinc-100 bg-zinc-50 p-4">
+                  <div className="mt-4 rounded-xl border border-zinc-100 bg-background p-4">
                     <p className="text-xs font-bold uppercase tracking-wide text-zinc-400">
                       Confirm this visit
                     </p>
@@ -389,7 +389,7 @@ export default function BrokerDashboardPage() {
                       }
                       placeholder="What happened at the visit? (client interest, questions raised, next steps...)"
                       rows={2}
-                      className="mt-2 w-full rounded-lg border border-zinc-200 bg-white px-3 py-2 text-sm outline-none focus:border-red-300"
+                      className="mt-2 w-full rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-accent/40"
                     />
 
                     <div className="mt-2 flex flex-wrap items-center gap-3">
