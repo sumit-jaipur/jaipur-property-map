@@ -360,7 +360,7 @@ export default function AdminPropertiesPage() {
     <main className="min-h-screen bg-zinc-50">
 
       <div className="border-b border-black/10 bg-header-bg">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4">
 
           <Link href="/" className="flex items-center gap-2.5">
               <img
@@ -373,7 +373,7 @@ export default function AdminPropertiesPage() {
               </span>
             </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Link
               href="/admin/ai-suggestions"
               className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
