@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { checkAdminAccess } from "../../lib/adminGuard";
+import AdminHeader from "../../components/AdminHeader";
+import { ShieldAlert } from "lucide-react";
 
 type QueueItem = {
   id: number;
@@ -317,8 +319,8 @@ export default function AdminBlogPage() {
     return (
       <main className="min-h-screen flex items-center justify-center bg-zinc-50 px-4">
         <div className="w-full max-w-md rounded-3xl border bg-white p-8 text-center shadow-sm">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50 text-2xl">
-            🛡️
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-red-50">
+            <ShieldAlert className="h-7 w-7 text-red-500" />
           </div>
 
           <h1 className="mt-4 text-2xl font-black text-zinc-900">
@@ -343,56 +345,7 @@ export default function AdminBlogPage() {
   return (
     <main className="min-h-screen bg-zinc-50">
 
-      <div className="border-b border-black/10 bg-header-bg">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-
-          <Link href="/" className="flex items-center gap-2.5">
-            <img
-              src="/logo.png"
-              alt="99Bricks"
-              className="h-9 w-9 rounded-full object-cover shadow-sm"
-            />
-            <span className="text-sm font-black text-header-fg">
-              99Bricks
-            </span>
-          </Link>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/admin/properties"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              Property Approval
-            </Link>
-
-            <Link
-              href="/admin/ai-suggestions"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              AI Suggestions
-            </Link>
-
-            <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white">
-              Blog Studio
-            </span>
-
-            <Link
-              href="/admin/inquiries"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              Sales Pipeline
-            </Link>
-
-            <Link
-              href="/admin/hr"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              HR
-            </Link>
-          </div>
-
-        </div>
-      </div>
+      <AdminHeader />
 
 
       <div className="mx-auto max-w-5xl px-4 py-8">

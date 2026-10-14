@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
+import { Camera } from "lucide-react";
 import LocationPicker, {
   LocationSource,
 } from "../components/LocationPicker";
@@ -646,8 +647,8 @@ export default function AddPropertyPage() {
 
               <div className="mt-4 rounded-2xl border-2 border-dashed border-zinc-200 bg-zinc-50 p-6 text-center">
 
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white text-xl shadow-sm">
-                  📷
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm">
+                  <Camera className="h-5 w-5 text-zinc-400" />
                 </div>
 
                 <p className="mt-3 text-sm font-semibold text-zinc-700">

@@ -8,6 +8,7 @@ import {
   SavedSearchFilters,
   describeFilters,
 } from "../lib/savedSearch";
+import { Bell } from "lucide-react";
 
 type SavedSearchRow = {
   id: number;
@@ -169,8 +170,8 @@ export default function SavedSearchesPage() {
         {savedSearches.length === 0 && (
           <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-12 text-center">
 
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-2xl">
-              🔔
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+              <Bell className="h-8 w-8 text-red-500" />
             </div>
 
             <h2 className="mt-4 text-xl font-black text-zinc-900">

@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { checkAdminAccess } from "../../lib/adminGuard";
+import AdminHeader from "../../components/AdminHeader";
 
 // "HR" -- built from Sumit's direct request: drafts job-post text for
 // external hiring platforms (Naukri, Apna, Indeed, Internshala) so he can
@@ -154,50 +155,7 @@ export default function AdminHrPage() {
 
   return (
     <main className="min-h-screen bg-zinc-50">
-      <div className="border-b border-black/10 bg-header-bg">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-          <Link href="/" className="flex items-center gap-2.5">
-            <img
-              src="/logo.png"
-              alt="99Bricks"
-              className="h-9 w-9 rounded-full object-cover shadow-sm"
-            />
-            <span className="text-sm font-black text-header-fg">
-              99Bricks
-            </span>
-          </Link>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/admin/properties"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              Property Approval
-            </Link>
-            <Link
-              href="/admin/ai-suggestions"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              AI Suggestions
-            </Link>
-            <Link
-              href="/admin/blog"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              Blog Studio
-            </Link>
-            <Link
-              href="/admin/inquiries"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              Sales Pipeline
-            </Link>
-            <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white">
-              HR
-            </span>
-          </div>
-        </div>
-      </div>
+      <AdminHeader />
 
       <div className="mx-auto max-w-5xl px-4 py-8">
         <div className="mb-7">

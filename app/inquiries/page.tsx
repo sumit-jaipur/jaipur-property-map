@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
+import { Inbox, Home } from "lucide-react";
 
 type Property = {
   id: number;
@@ -165,8 +166,8 @@ export default function InquiriesPage() {
         {!error && inquiries.length === 0 && (
           <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-12 text-center">
 
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-2xl">
-              📥
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+              <Inbox className="h-8 w-8 text-red-500" />
             </div>
 
             <h2 className="mt-4 text-xl font-black text-zinc-900">
@@ -205,8 +206,8 @@ export default function InquiriesPage() {
                     className="h-36 w-full rounded-2xl object-cover sm:h-28 sm:w-36"
                   />
                 ) : (
-                  <div className="flex h-28 w-full items-center justify-center rounded-2xl bg-zinc-100 text-2xl sm:w-36">
-                    🏠
+                  <div className="flex h-28 w-full items-center justify-center rounded-2xl bg-zinc-100 sm:w-36">
+                    <Home className="h-8 w-8 text-zinc-400" />
                   </div>
                 )}
 

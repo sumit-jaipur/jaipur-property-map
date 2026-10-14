@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
+import { Heart } from "lucide-react";
 
 type Property = {
   id: number;
@@ -200,8 +201,8 @@ export default function FavoritesPage() {
         {!error && properties.length === 0 && (
           <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-12 text-center">
 
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-2xl">
-              ♡
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+              <Heart className="h-8 w-8 text-red-500" />
             </div>
 
             <h2 className="mt-4 text-xl font-black text-zinc-900">
@@ -250,10 +251,14 @@ export default function FavoritesPage() {
                     removeFavorite(property.id)
                   }
                   disabled={removingId === property.id}
-                  className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-lg shadow-lg transition hover:scale-110 disabled:opacity-50"
+                  className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 shadow-lg transition hover:scale-110 disabled:opacity-50"
                   title="Remove favorite"
                 >
-                  {removingId === property.id ? "..." : "❤️"}
+                  {removingId === property.id ? (
+                    "..."
+                  ) : (
+                    <Heart className="h-5 w-5 text-red-500" fill="currentColor" />
+                  )}
                 </button>
 
                 <span className="absolute bottom-3 left-3 rounded-full bg-white/95 px-3 py-1 text-xs font-bold text-zinc-800">

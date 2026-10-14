@@ -8,6 +8,7 @@ import EmiCalculator from "../../components/EmiCalculator";
 import StampDutyCalculator from "../../components/StampDutyCalculator";
 import { LOCALITIES } from "../../lib/localities";
 import { getAccountTypeLabel } from "../../lib/accountTypes";
+import { Home } from "lucide-react";
 
 function formatPrice(price: number) {
   if (!price) return "";
@@ -553,8 +554,9 @@ export default function PropertyPage() {
                 )}
 
                 <div className="rounded-2xl border-2 border-red-100 bg-red-50/60 p-5">
-                  <p className="text-base font-bold text-zinc-900">
-                    🏡 Free Consultancy + Free Site Visit
+                  <p className="flex items-center gap-1.5 text-base font-bold text-zinc-900">
+                    <Home className="h-4 w-4 shrink-0" />
+                    Free Consultancy + Free Site Visit
                   </p>
                   <p className="mt-1 text-sm text-zinc-600">
                     Our team will personally show you this property (and

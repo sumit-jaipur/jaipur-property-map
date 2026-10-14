@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Factor } from "@supabase/supabase-js";
 import { supabase } from "../../lib/supabaseClient";
+import AdminHeader from "../../components/AdminHeader";
 
 type TotpFactor = Factor<"totp">;
 
@@ -215,16 +216,7 @@ export default function AdminSecurityPage() {
 
   return (
     <main className="min-h-screen bg-zinc-50">
-      <div className="bg-zinc-900 px-5 py-4">
-        <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <Link
-            href="/admin/properties"
-            className="text-sm font-bold text-white"
-          >
-            ← Admin Dashboard
-          </Link>
-        </div>
-      </div>
+      <AdminHeader />
 
       <div className="max-w-2xl mx-auto px-5 py-8">
         <h1 className="text-2xl font-black text-zinc-900 mb-1">

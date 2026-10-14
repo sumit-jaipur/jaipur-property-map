@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
+import { Home } from "lucide-react";
 
 type Property = {
   id: number;
@@ -234,8 +235,8 @@ export default function MyPropertiesPage() {
         {!error && properties.length === 0 && (
           <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-12 text-center">
 
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-2xl">
-              🏠
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+              <Home className="h-8 w-8 text-red-500" />
             </div>
 
             <h2 className="mt-4 text-xl font-black text-zinc-900">

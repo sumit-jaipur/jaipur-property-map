@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
+import { Bell, Home } from "lucide-react";
 
 type Property = {
   id: number;
@@ -202,8 +203,8 @@ export default function AlertsPage() {
         {alerts.length === 0 && (
           <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-12 text-center">
 
-            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-2xl">
-              🔔
+            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+              <Bell className="h-8 w-8 text-red-500" />
             </div>
 
             <h2 className="mt-4 text-xl font-black text-zinc-900">
@@ -236,8 +237,8 @@ export default function AlertsPage() {
                   className="flex flex-col gap-4 rounded-3xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm sm:flex-row sm:items-center"
                 >
 
-                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-2xl sm:h-24 sm:w-24">
-                    🏡
+                  <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-blue-100 sm:h-24 sm:w-24">
+                    <Home className="h-8 w-8 text-blue-500 sm:h-10 sm:w-10" />
                   </div>
 
                   <div className="min-w-0 flex-1">

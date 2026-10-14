@@ -4,6 +4,7 @@ import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
+import { Mic } from "lucide-react";
 
 type ComparisonNote = { id: number; note: string };
 
@@ -629,13 +630,13 @@ function ComparePageInner() {
                         : startListening(QUESTIONS[step].key)
                     }
                     title={listening ? "Stop listening" : "Speak your answer"}
-                    className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-lg transition ${
+                    className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full transition ${
                       listening
                         ? "animate-pulse bg-red-600 text-white"
                         : "bg-zinc-100 text-zinc-500 hover:bg-accent-soft hover:text-accent"
                     }`}
                   >
-                    🎤
+                    <Mic className="h-4 w-4" />
                   </button>
 
                 </div>

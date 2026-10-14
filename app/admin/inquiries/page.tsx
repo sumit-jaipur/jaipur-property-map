@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { checkAdminAccess } from "../../lib/adminGuard";
+import AdminHeader from "../../components/AdminHeader";
+import { ClipboardList, Home, Check } from "lucide-react";
 
 // "Sales Pipeline" -- built from Sumit's direct request: every buyer
 // inquiry (the existing `inquiries` table, unchanged -- a buyer's message
@@ -352,54 +354,7 @@ export default function AdminInquiriesPage() {
 
   return (
     <main className="min-h-screen bg-zinc-50">
-      <div className="border-b border-black/10 bg-header-bg">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-4">
-          <Link href="/" className="flex items-center gap-2.5">
-            <img
-              src="/logo.png"
-              alt="99Bricks"
-              className="h-9 w-9 rounded-full object-cover shadow-sm"
-            />
-            <span className="text-sm font-black text-header-fg">
-              99Bricks
-            </span>
-          </Link>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href="/admin/properties"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              Property Approval
-            </Link>
-
-            <Link
-              href="/admin/ai-suggestions"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              AI Suggestions
-            </Link>
-
-            <Link
-              href="/admin/blog"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              Blog Studio
-            </Link>
-
-            <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white">
-              Sales Pipeline
-            </span>
-
-            <Link
-              href="/admin/hr"
-              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
-            >
-              HR
-            </Link>
-          </div>
-        </div>
-      </div>
+      <AdminHeader />
 
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
@@ -569,8 +524,8 @@ export default function AdminInquiriesPage() {
 
             {visibleInquiries.length === 0 && (
               <div className="rounded-3xl border border-dashed border-zinc-300 bg-white p-12 text-center">
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-2xl">
-                  📋
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-50">
+                  <ClipboardList className="h-8 w-8 text-red-500" />
                 </div>
                 <h2 className="mt-4 text-xl font-black text-zinc-900">
                   No inquiries here
@@ -660,8 +615,9 @@ export default function AdminInquiriesPage() {
 
                         {inquiry.status === "site_visit_scheduled" &&
                           !inquiry.assigned_to && (
-                            <span className="mt-1 inline-block rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
-                              🏡 Free visit requested -- needs a broker
+                            <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-700">
+                              <Home className="h-3 w-3" />
+                              Free visit requested -- needs a broker
                             </span>
                           )}
 
@@ -755,9 +711,14 @@ export default function AdminInquiriesPage() {
                                   : "text-zinc-400"
                               }`}
                             >
-                              {inquiry.visit_completed
-                                ? "✓ Visit verified"
-                                : "Visit not yet verified"}
+                              {inquiry.visit_completed ? (
+                                <span className="inline-flex items-center gap-1">
+                                  <Check className="h-3 w-3" />
+                                  Visit verified
+                                </span>
+                              ) : (
+                                "Visit not yet verified"
+                              )}
                             </span>
 
                             {inquiry.visit_completed ? (

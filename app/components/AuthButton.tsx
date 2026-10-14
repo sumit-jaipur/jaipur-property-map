@@ -4,6 +4,18 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { supabase } from "../lib/supabaseClient";
 import { getAccountTypeLabel } from "../lib/accountTypes";
+import {
+  ShieldCheck,
+  ClipboardList,
+  Bell,
+  Search,
+  Heart,
+  Home,
+  MessageSquare,
+  Inbox,
+  LogOut,
+  ChevronDown,
+} from "lucide-react";
 
 export default function AuthButton() {
   const [email, setEmail] = useState<string | null>(null);
@@ -130,8 +142,8 @@ export default function AuthButton() {
           </p>
         </div>
 
-        <span className="hidden text-xs text-zinc-400 sm:block">
-          ▼
+        <span className="hidden text-zinc-400 sm:block">
+          <ChevronDown className="h-3.5 w-3.5" />
         </span>
       </button>
 
@@ -160,7 +172,7 @@ export default function AuthButton() {
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 rounded-xl bg-red-50 px-3 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-100"
               >
-                <span>🛡️</span>
+                <ShieldCheck className="h-4 w-4" />
                 Admin Dashboard
               </Link>
             )}
@@ -171,7 +183,7 @@ export default function AuthButton() {
                 onClick={() => setOpen(false)}
                 className="flex items-center gap-3 rounded-xl bg-blue-50 px-3 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
               >
-                <span>📋</span>
+                <ClipboardList className="h-4 w-4" />
                 My Visits
               </Link>
             )}
@@ -182,7 +194,7 @@ export default function AuthButton() {
               className="mt-1 flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 hover:text-red-600"
             >
               <span className="flex items-center gap-3">
-                <span>🔔</span>
+                <Bell className="h-4 w-4" />
                 Alerts
               </span>
 
@@ -198,7 +210,7 @@ export default function AuthButton() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 hover:text-red-600"
             >
-              <span>🔍</span>
+              <Search className="h-4 w-4" />
               Saved Searches
             </Link>
 
@@ -207,7 +219,7 @@ export default function AuthButton() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 hover:text-red-600"
             >
-              <span>❤️</span>
+              <Heart className="h-4 w-4" />
               My Favorites
             </Link>
 
@@ -216,7 +228,7 @@ export default function AuthButton() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 hover:text-red-600"
             >
-              <span>🏠</span>
+              <Home className="h-4 w-4" />
               My Properties
             </Link>
 
@@ -225,7 +237,7 @@ export default function AuthButton() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 hover:text-red-600"
             >
-              <span>💬</span>
+              <MessageSquare className="h-4 w-4" />
               My Inquiries
             </Link>
 
@@ -234,7 +246,7 @@ export default function AuthButton() {
               onClick={() => setOpen(false)}
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-50 hover:text-red-600"
             >
-              <span>📥</span>
+              <Inbox className="h-4 w-4" />
               Seller Inbox
             </Link>
 
@@ -246,7 +258,7 @@ export default function AuthButton() {
               onClick={handleSignOut}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold text-zinc-700 transition hover:bg-red-50 hover:text-red-600"
             >
-              <span>↪</span>
+              <LogOut className="h-4 w-4" />
               Sign Out
             </button>
           </div>

@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { Mic } from "lucide-react";
 
 type Recommendation = {
   id: number;
@@ -231,13 +232,13 @@ export default function AiAdvisorPage() {
               type="button"
               onClick={listening ? stopListening : startListening}
               title={listening ? "Stop listening" : "Speak your request"}
-              className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-lg transition ${
+              className={`absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full transition ${
                 listening
                   ? "animate-pulse bg-red-600 text-white"
                   : "bg-zinc-100 text-zinc-500 hover:bg-accent-soft hover:text-accent"
               }`}
             >
-              🎤
+              <Mic className="h-4 w-4" />
             </button>
 
           </div>

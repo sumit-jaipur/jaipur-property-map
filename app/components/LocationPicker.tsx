@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Map, { Marker, Layer, NavigationControl } from "react-map-gl/mapbox";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { MapPin, Paperclip } from "lucide-react";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -491,9 +492,18 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
                 )
               }
             >
-              <div className="text-3xl leading-none drop-shadow-lg">
-                📍
-              </div>
+              {/* A real MapPin glyph instead of the 📍 emoji -- Apple,
+                  Google and Samsung each draw the pin emoji differently
+                  (and some Android fonts render it as a generic flag),
+                  so the exact same listing's pin looked different on an
+                  iPhone vs an Android phone. One SVG looks identical
+                  everywhere. */}
+              <MapPin
+                className="h-9 w-9 text-red-600 drop-shadow-lg"
+                fill="currentColor"
+                stroke="white"
+                strokeWidth={1.5}
+              />
             </Marker>
           )}
         </Map>
@@ -513,11 +523,16 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
             type="button"
             onClick={useCurrentLocation}
             disabled={locating}
-            className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-200 disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-200 disabled:opacity-50"
           >
-            {locating
-              ? "Locating..."
-              : "📍 Use my current location"}
+            {locating ? (
+              "Locating..."
+            ) : (
+              <>
+                <MapPin className="h-3.5 w-3.5" />
+                Use my current location
+              </>
+            )}
           </button>
 
           <button
@@ -526,9 +541,10 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
               setShowPasteBox((current) => !current);
               setPasteError("");
             }}
-            className="rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-200"
+            className="flex items-center gap-1.5 rounded-full bg-zinc-100 px-3 py-1.5 text-xs font-bold text-zinc-700 transition hover:bg-zinc-200"
           >
-            📎 Paste a shared location
+            <Paperclip className="h-3.5 w-3.5" />
+            Paste a shared location
           </button>
         </div>
       </div>

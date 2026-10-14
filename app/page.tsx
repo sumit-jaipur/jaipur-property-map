@@ -12,6 +12,7 @@ import {
 } from "./lib/savedSearch";
 import { LOCALITIES } from "./lib/localities";
 import { PriceUnit, priceUnitToRupees } from "./components/PriceInput";
+import { Bell } from "lucide-react";
 
 type Property = {
   id: number;
@@ -1553,9 +1554,10 @@ export default function Home() {
             <button
               type="button"
               onClick={openSaveSearch}
-              className="shrink-0 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:border-accent/40 hover:text-accent"
+              className="flex shrink-0 items-center gap-1.5 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-semibold text-zinc-700 transition hover:border-accent/40 hover:text-accent"
             >
-              🔔 Save Search
+              <Bell className="h-4 w-4" />
+              Save Search
             </button>
 
           </div>

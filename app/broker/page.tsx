@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../lib/supabaseClient";
+import { Check } from "lucide-react";
 
 // Broker/agent dashboard: shows only the leads Sumit (an admin, from
 // Admin -> Sales Pipeline) has assigned to THIS logged-in broker, and
@@ -410,9 +411,14 @@ export default function BrokerDashboardPage() {
                         onClick={() => submitVisit(lead.id)}
                         className="rounded-xl bg-green-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-green-700 disabled:opacity-50"
                       >
-                        {submittingId === lead.id
-                          ? "Saving..."
-                          : "✓ Mark Visit Complete"}
+                        {submittingId === lead.id ? (
+                          "Saving..."
+                        ) : (
+                          <span className="inline-flex items-center gap-1">
+                            <Check className="h-3.5 w-3.5" />
+                            Mark Visit Complete
+                          </span>
+                        )}
                       </button>
                     </div>
 
@@ -441,8 +447,9 @@ export default function BrokerDashboardPage() {
                   className="rounded-2xl border border-green-100 bg-green-50/40 p-5"
                 >
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-[11px] font-bold text-green-700">
-                      {"✓ Visit verified"}
+                    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-0.5 text-[11px] font-bold text-green-700">
+                      <Check className="h-2.5 w-2.5" />
+                      Visit verified
                     </span>
 
                     {lead.visit_completed_at && (
