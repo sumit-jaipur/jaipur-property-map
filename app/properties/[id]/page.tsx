@@ -8,7 +8,7 @@ import EmiCalculator from "../../components/EmiCalculator";
 import StampDutyCalculator from "../../components/StampDutyCalculator";
 import { LOCALITIES } from "../../lib/localities";
 import { getAccountTypeLabel } from "../../lib/accountTypes";
-import { Home } from "lucide-react";
+import { Home, Navigation } from "lucide-react";
 
 function formatPrice(price: number) {
   if (!price) return "";
@@ -215,6 +215,27 @@ export default function PropertyPage() {
       kind === "visit"
         ? "Request received. Our team will call you shortly to schedule your free visit."
         : "Inquiry sent successfully."
+    );
+  }
+
+  // "Get Directions" is gated behind sign-in on purpose -- this is a
+  // map-based platform, so turn-by-turn directions is exactly the kind
+  // of high-intent action (someone about to actually go see the
+  // property) worth capturing as a known lead instead of letting an
+  // anonymous visitor use it for free. Mirrors the same
+  // not-signed-in-yet gate submitInquiry already uses above.
+  function handleGetDirections() {
+    if (!authUser) {
+      router.push("/auth");
+      return;
+    }
+
+    if (!property.lat || !property.lng) return;
+
+    window.open(
+      `https://www.google.com/maps/dir/?api=1&destination=${property.lat},${property.lng}`,
+      "_blank",
+      "noopener,noreferrer"
     );
   }
 
@@ -462,6 +483,27 @@ export default function PropertyPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
+            {property.lat && property.lng && (
+              <button
+                type="button"
+                onClick={handleGetDirections}
+                title={
+                  !authUser
+                    ? "Sign in to get turn-by-turn directions"
+                    : "Open directions in Google Maps"
+                }
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-700"
+              >
+                <Navigation className="h-4 w-4" />
+                Get Directions
+                {!authUser && (
+                  <span className="rounded-full bg-white/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
+                    Sign in
+                  </span>
+                )}
+              </button>
+            )}
+
             <a
               href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
               target="_blank"
