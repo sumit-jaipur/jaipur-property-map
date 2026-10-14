@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
 import { getAccountTypeLabel } from "../../lib/accountTypes";
+import { checkAdminAccess } from "../../lib/adminGuard";
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
 
@@ -94,24 +95,19 @@ export default function AdminPropertiesPage() {
 
   useEffect(() => {
     async function loadPage() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const access = await checkAdminAccess();
 
-      if (!user) {
-        router.replace("/auth");
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.role !== "admin") {
-        setAccessDenied(true);
-        setLoading(false);
+      if (!access.ok) {
+        if (access.reason === "signed_out") {
+          router.replace("/auth");
+        } else if (access.reason === "mfa_required") {
+          router.replace(
+            `/admin/verify-2fa?next=${encodeURIComponent("/admin/properties")}`
+          );
+        } else {
+          setAccessDenied(true);
+          setLoading(false);
+        }
         return;
       }
 
@@ -404,6 +400,13 @@ export default function AdminPropertiesPage() {
               className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
             >
               HR
+            </Link>
+
+            <Link
+              href="/admin/security"
+              className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20"
+            >
+              Security
             </Link>
 
             <span className="rounded-full bg-white/10 px-3 py-1.5 text-xs font-bold text-white">

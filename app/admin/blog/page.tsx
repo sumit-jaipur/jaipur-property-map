@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
+import { checkAdminAccess } from "../../lib/adminGuard";
 
 type QueueItem = {
   id: number;
@@ -115,24 +116,19 @@ export default function AdminBlogPage() {
 
   useEffect(() => {
     async function loadPage() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const access = await checkAdminAccess();
 
-      if (!user) {
-        router.replace("/auth");
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.role !== "admin") {
-        setAccessDenied(true);
-        setLoading(false);
+      if (!access.ok) {
+        if (access.reason === "signed_out") {
+          router.replace("/auth");
+        } else if (access.reason === "mfa_required") {
+          router.replace(
+            `/admin/verify-2fa?next=${encodeURIComponent("/admin/blog")}`
+          );
+        } else {
+          setAccessDenied(true);
+          setLoading(false);
+        }
         return;
       }
 

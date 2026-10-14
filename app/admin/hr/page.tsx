@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "../../lib/supabaseClient";
+import { checkAdminAccess } from "../../lib/adminGuard";
 
 // "HR" -- built from Sumit's direct request: drafts job-post text for
 // external hiring platforms (Naukri, Apna, Indeed, Internshala) so he can
@@ -47,23 +48,20 @@ export default function AdminHrPage() {
 
   useEffect(() => {
     async function checkAccess() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const access = await checkAdminAccess();
 
-      if (!user) {
-        router.replace("/auth");
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.role !== "admin") {
-        setAccessDenied(true);
+      if (!access.ok) {
+        if (access.reason === "signed_out") {
+          router.replace("/auth");
+          return;
+        } else if (access.reason === "mfa_required") {
+          router.replace(
+            `/admin/verify-2fa?next=${encodeURIComponent("/admin/hr")}`
+          );
+          return;
+        } else {
+          setAccessDenied(true);
+        }
       }
 
       setCheckingAccess(false);
